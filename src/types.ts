@@ -1,11 +1,47 @@
-export type AudioType = 'brown' | 'pink' | 'binaural' | 'drone';
+export type AudioType = 'brown' | 'pink' | 'white' | 'rain' | 'binaural' | 'drone' | 'office' | 'cafe';
 
-export interface TaskItem {
+export interface FocusBit {
   id: string;
-  label: string;
+  title: string;
   completed: boolean;
-  timestamp?: number;
+  estimatedMinutes?: number;
   category?: string;
+  createdAt: number;
+}
+
+export type EisenhowerCategory =
+  | 'urgent_important'
+  | 'not_urgent_important'
+  | 'urgent_not_important'
+  | 'not_urgent_not_important';
+
+export type Rule135Category = 'big' | 'medium' | 'small';
+
+export interface TodoItem {
+  id: string;
+  title: string;
+  completed: boolean;
+  priority: 'low' | 'medium' | 'high';
+  eisenhower: EisenhowerCategory;
+  rule135?: Rule135Category;
+  isFrog?: boolean;
+  focusBits: FocusBit[];
+  dueDate?: string;
+  category?: string;
+  notes?: string;
+  createdAt: number;
+}
+
+export interface SymptomLog {
+  id: string;
+  date: string;
+  timestamp: number;
+  symptomName: string;
+  severity: number; // 1 to 10
+  triggers?: string;
+  copingMethod?: string;
+  bodyArea?: string;
+  notes?: string;
 }
 
 export interface SessionLog {
@@ -17,6 +53,39 @@ export interface SessionLog {
   energyEnd: number;
   notes?: string;
   effortRating: 'low' | 'standard' | 'high';
+}
+
+export interface NoteItem {
+  id: string;
+  title: string;
+  content: string;
+  category: 'general' | 'somatic' | 'office' | 'task';
+  pinned: boolean;
+  date: string;
+  timestamp: number;
+}
+
+export interface UserProfile {
+  name: string;
+  roleTitle: string;
+  dailyGoalBits: number;
+  preferredNoise: AudioType;
+  avatarEmoji: string;
+  totalBitsLogged: number;
+  streakDays: number;
+  panicGroundingPhrase: string;
+  medicalEmergencyNote?: string;
+  theme?: 'light' | 'dark';
+}
+
+export interface VirtualCoworker {
+  id: string;
+  name: string;
+  role: string;
+  avatar: string;
+  status: string;
+  currentFocus: string;
+  timeAgo: string;
 }
 
 export type SprintPhase = 'work' | 'rest';

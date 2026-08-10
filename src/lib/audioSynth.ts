@@ -63,10 +63,18 @@ class AudioSynthesizer {
       this.noiseNode = this.createBrownNoiseNode(this.ctx, this.gainNode);
     } else if (type === 'pink') {
       this.noiseNode = this.createPinkNoiseNode(this.ctx, this.gainNode);
+    } else if (type === 'white') {
+      this.noiseNode = this.createWhiteNoiseNode(this.ctx, this.gainNode);
+    } else if (type === 'rain') {
+      this.noiseNode = this.createRainNode(this.ctx, this.gainNode);
     } else if (type === 'binaural') {
       this.noiseNode = this.createBinauralNode(this.ctx, this.gainNode);
     } else if (type === 'drone') {
       this.noiseNode = this.createDroneNode(this.ctx, this.gainNode);
+    } else if (type === 'office') {
+      this.noiseNode = this.createOfficeNode(this.ctx, this.gainNode);
+    } else if (type === 'cafe') {
+      this.noiseNode = this.createCafeNode(this.ctx, this.gainNode);
     }
 
     this.isPlaying = true;
@@ -194,6 +202,108 @@ class AudioSynthesizer {
     };
 
     return masterGain as unknown as AudioNode;
+  }
+
+  private createWhiteNoiseNode(ctx: AudioContext, destination: AudioNode): AudioNode {
+    const bufferSize = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.12;
+    }
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.connect(destination);
+    source.start();
+    return source;
+  }
+
+  private createRainNode(ctx: AudioContext, destination: AudioNode): AudioNode {
+    const bufferSize = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    let lastOut = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      // Gentle low pass rain patter
+      lastOut = (lastOut + 0.1 * white) / 1.1;
+      data[i] = lastOut * 0.8;
+      // Random droplet clicks
+      if (Math.random() < 0.001) {
+        data[i] += (Math.random() - 0.5) * 0.4;
+      }
+    }
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 1200;
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.connect(filter);
+    filter.connect(destination);
+    source.start();
+    return source;
+  }
+
+  private createOfficeNode(ctx: AudioContext, destination: AudioNode): AudioNode {
+    // Soft low hum (HVAC) + occasional typing clicks simulation
+    const bufferSize = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    let lastOut = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      lastOut = (lastOut + 0.015 * white) / 1.015;
+      data[i] = lastOut * 1.5;
+    }
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+
+    const bandpass = ctx.createBiquadFilter();
+    bandpass.type = 'bandpass';
+    bandpass.frequency.value = 450;
+    bandpass.Q.value = 0.8;
+
+    source.connect(bandpass);
+    bandpass.connect(destination);
+    source.start();
+    return source;
+  }
+
+  private createCafeNode(ctx: AudioContext, destination: AudioNode): AudioNode {
+    const bufferSize = ctx.sampleRate * 2;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    let b0 = 0, b1 = 0, b2 = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99 * b0 + white * 0.05;
+      b1 = 0.95 * b1 + white * 0.03;
+      b2 = 0.90 * b2 + white * 0.02;
+      data[i] = (b0 + b1 + b2) * 0.15;
+    }
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 800;
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.connect(filter);
+    filter.connect(destination);
+    source.start();
+    return source;
   }
 
   public playChime() {
