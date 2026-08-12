@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Volume2, VolumeX, ShieldAlert, FileText, Activity, Settings, RotateCcw, FileEdit, Cross } from 'lucide-react';
 import { EnergyBattery } from './EnergyBattery';
 import { MindsetPulse } from './MindsetPulse';
@@ -16,6 +16,7 @@ interface HeaderProps {
   onOpenSettings: () => void;
   onDailyReset: () => void;
   userProfile: UserProfile;
+  onUpdateProfile?: (updated: UserProfile) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -29,10 +30,17 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   onDailyReset,
   userProfile,
+  onUpdateProfile,
 }) => {
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(audioSynth.getIsPlaying());
-  const [audioType, setAudioType] = useState<AudioType>(audioSynth.getCurrentType());
+  const [audioType, setAudioType] = useState<AudioType>(userProfile.preferredNoise || 'brown');
   const [volume, setVolume] = useState<number>(0.2);
+
+  useEffect(() => {
+    if (userProfile.preferredNoise && userProfile.preferredNoise !== audioType) {
+      setAudioType(userProfile.preferredNoise);
+    }
+  }, [userProfile.preferredNoise]);
 
   const handleAudioToggle = () => {
     const newState = audioSynth.toggle(audioType);
@@ -44,6 +52,9 @@ export const Header: React.FC<HeaderProps> = ({
     setAudioType(newType);
     if (isPlayingAudio) {
       audioSynth.play(newType);
+    }
+    if (onUpdateProfile) {
+      onUpdateProfile({ ...userProfile, preferredNoise: newType });
     }
   };
 

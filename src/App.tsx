@@ -177,36 +177,72 @@ export default function App() {
     if (!googleUser) return;
     const uid = googleUser.uid;
 
+    let isProfileInitial = true;
     const unsubProfile = subscribeUserProfileFromFirestore(uid, (profile) => {
-      if (profile) setUserProfile(profile);
+      if (profile) {
+        setUserProfile(profile);
+      } else if (isProfileInitial) {
+        saveUserProfileToFirestore(uid, userProfile);
+      }
+      isProfileInitial = false;
     });
 
+    let isTodosInitial = true;
     const unsubTodos = subscribeTodosFromFirestore(uid, (remoteTodos) => {
-      if (remoteTodos && remoteTodos.length > 0) {
-        setTodos(remoteTodos);
+      if (remoteTodos) {
+        if (remoteTodos.length > 0) {
+          setTodos(remoteTodos);
+        } else if (isTodosInitial) {
+          DEFAULT_TODOS.forEach((t) => saveTodoToFirestore(uid, t));
+        } else {
+          setTodos([]);
+        }
       }
+      isTodosInitial = false;
     });
 
+    let isSymptomsInitial = true;
     const unsubSymptoms = subscribeSymptomsFromFirestore(uid, (remoteSymptoms) => {
-      if (remoteSymptoms && remoteSymptoms.length > 0) {
-        setSymptomLogs(remoteSymptoms);
+      if (remoteSymptoms) {
+        if (remoteSymptoms.length > 0) {
+          setSymptomLogs(remoteSymptoms);
+        } else if (isSymptomsInitial) {
+          DEFAULT_SYMPTOMS.forEach((s) => saveSymptomToFirestore(uid, s));
+        } else {
+          setSymptomLogs([]);
+        }
       }
+      isSymptomsInitial = false;
     });
 
+    let isNotesInitial = true;
     const unsubNotes = subscribeNotesFromFirestore(uid, (remoteNotes) => {
-      if (remoteNotes && remoteNotes.length > 0) {
-        setNotes(remoteNotes);
+      if (remoteNotes) {
+        if (remoteNotes.length > 0) {
+          setNotes(remoteNotes);
+        } else if (isNotesInitial) {
+          DEFAULT_NOTES.forEach((n) => saveNoteToFirestore(uid, n));
+        } else {
+          setNotes([]);
+        }
       }
+      isNotesInitial = false;
     });
 
     const unsubLogs = subscribeSessionLogsFromFirestore(uid, (remoteLogs) => {
-      if (remoteLogs && remoteLogs.length > 0) {
+      if (remoteLogs) {
         setSessionLogs(remoteLogs);
       }
     });
 
+    let isStateInitial = true;
     const unsubState = subscribeUserStateFromFirestore(uid, (remoteBattery) => {
-      if (typeof remoteBattery === 'number') setBattery(remoteBattery);
+      if (typeof remoteBattery === 'number') {
+        setBattery(remoteBattery);
+      } else if (isStateInitial) {
+        saveUserStateToFirestore(uid, battery);
+      }
+      isStateInitial = false;
     });
 
     return () => {
@@ -217,14 +253,11 @@ export default function App() {
       unsubLogs();
       unsubState();
     };
-  }, [googleUser]);
+  }, [googleUser?.uid]);
 
   useEffect(() => {
     localStorage.setItem('zawe_battery', battery.toString());
-    if (googleUser) {
-      saveUserStateToFirestore(googleUser.uid, battery);
-    }
-  }, [battery, googleUser]);
+  }, [battery]);
 
   useEffect(() => {
     localStorage.setItem('zawe_profile', JSON.stringify(userProfile));
@@ -233,10 +266,7 @@ export default function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-    if (googleUser) {
-      saveUserProfileToFirestore(googleUser.uid, userProfile);
-    }
-  }, [userProfile, googleUser]);
+  }, [userProfile]);
 
   useEffect(() => {
     localStorage.setItem('zawe_todos', JSON.stringify(todos));
@@ -259,26 +289,48 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  const handleUpdateProfile = (updated: UserProfile) => {
+    setUserProfile(updated);
+    if (googleUser) {
+      saveUserProfileToFirestore(googleUser.uid, updated);
+    }
+  };
+
   const handleDrainBattery = (amount: number) => {
     setBattery((prev) => {
       const next = Math.max(0, prev - amount);
       if (next <= 25 && prev > 25) {
         triggerToast('⚠️ Cognitive Battery Low! Mandatory 3-minute somatic rest recommended.');
       }
+      if (googleUser) {
+        saveUserStateToFirestore(googleUser.uid, next);
+      }
       return next;
     });
   };
 
   const handleRechargeBattery = () => {
-    setBattery((prev) => Math.min(100, prev + 25));
+    setBattery((prev) => {
+      const next = Math.min(100, prev + 25);
+      if (googleUser) {
+        saveUserStateToFirestore(googleUser.uid, next);
+      }
+      return next;
+    });
     triggerToast('🔋 Somatic Recharge applied (+25% Energy)!');
   };
 
   const handleLogTask = () => {
-    setUserProfile((prev) => ({
-      ...prev,
-      totalBitsLogged: prev.totalBitsLogged + 1,
-    }));
+    setUserProfile((prev) => {
+      const next = {
+        ...prev,
+        totalBitsLogged: prev.totalBitsLogged + 1,
+      };
+      if (googleUser) {
+        saveUserProfileToFirestore(googleUser.uid, next);
+      }
+      return next;
+    });
     triggerToast('✨ 1 Focus Bit Logged!');
   };
 
@@ -543,6 +595,7 @@ export default function App() {
           onOpenSettings={() => setIsSettingsOpen(true)}
           onDailyReset={handleDailyReset}
           userProfile={userProfile}
+          onUpdateProfile={handleUpdateProfile}
         />
 
         {/* Primary Tab Navigation */}
@@ -695,7 +748,7 @@ export default function App() {
           onClose={() => setIsProfileOpen(false)}
           profile={userProfile}
           onUpdateProfile={(updated) => {
-            setUserProfile(updated);
+            handleUpdateProfile(updated);
             triggerToast('Updated profile preferences!');
           }}
           totalFocusBitsLogged={userProfile.totalBitsLogged}
@@ -716,7 +769,7 @@ export default function App() {
           userProfile={userProfile}
           profile={userProfile}
           onUpdateProfile={(updated) => {
-            setUserProfile(updated);
+            handleUpdateProfile(updated);
             triggerToast('Saved settings preferences!');
           }}
           onDailyReset={handleDailyReset}
