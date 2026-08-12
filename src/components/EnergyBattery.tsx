@@ -5,9 +5,10 @@ interface EnergyBatteryProps {
   battery: number; // 0 - 100
   onRecharge: () => void;
   onDrain: (amount: number) => void;
+  onSetBattery?: (level: number) => void;
 }
 
-export const EnergyBattery: React.FC<EnergyBatteryProps> = ({ battery, onRecharge, onDrain }) => {
+export const EnergyBattery: React.FC<EnergyBatteryProps> = ({ battery, onRecharge, onDrain, onSetBattery }) => {
   const getBatteryColor = () => {
     if (battery <= 25) return 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]';
     if (battery <= 55) return 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.3)]';
@@ -20,6 +21,15 @@ export const EnergyBattery: React.FC<EnergyBatteryProps> = ({ battery, onRecharg
     return <BatteryCharging className="w-4 h-4 text-pink-500" />;
   };
 
+  const handleBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!onSetBattery) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percent = Math.round((clickX / rect.width) * 100);
+    const clamped = Math.max(0, Math.min(100, Math.round(percent / 5) * 5));
+    onSetBattery(clamped);
+  };
+
   return (
     <div className="flex items-center gap-2 bg-white/90 border border-pink-200/90 shadow-sm shadow-pink-500/5 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-700">
       <div className="flex items-center gap-1.5">
@@ -27,7 +37,11 @@ export const EnergyBattery: React.FC<EnergyBatteryProps> = ({ battery, onRecharg
         <span className="text-slate-500 font-medium">Battery:</span>
       </div>
 
-      <div className="w-12 h-2.5 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-300">
+      <div
+        onClick={handleBarClick}
+        title="Click anywhere on bar to set battery percentage directly (auto-lowers as you complete bits)"
+        className="w-14 h-3 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-300 cursor-pointer hover:border-pink-400 transition-colors"
+      >
         <div
           className={`h-full rounded-full transition-all duration-500 ${getBatteryColor()}`}
           style={{ width: `${Math.max(5, battery)}%` }}

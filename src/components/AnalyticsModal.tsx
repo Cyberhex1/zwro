@@ -9,6 +9,9 @@ import {
   Activity,
   Award,
   CheckCircle2,
+  Lock,
+  ChevronDown,
+  ChevronUp,
   PieChart as PieChartIcon,
 } from 'lucide-react';
 import {
@@ -45,6 +48,8 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
   sessionLogs,
   todos,
 }) => {
+  const [showRankPreview, setShowRankPreview] = useState<boolean>(false);
+
   if (!isOpen) return null;
 
   const currentXp = userProfile.xp || 0;
@@ -125,9 +130,21 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
                 </div>
               </div>
 
-              <div className="text-right">
-                <span className="text-[10px] font-bold uppercase tracking-wider opacity-75 block">Total Experience</span>
-                <span className="text-lg font-black font-mono">{currentXp} XP</span>
+              <div className="flex items-center gap-3">
+                <div className="text-right">
+                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-75 block">Total Experience</span>
+                  <span className="text-lg font-black font-mono">{currentXp} XP</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowRankPreview((prev) => !prev)}
+                  className="px-3 py-1.5 rounded-xl bg-white/80 hover:bg-white dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold border border-black/10 dark:border-white/10 flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                >
+                  <Award className="w-3.5 h-3.5 text-pink-500" />
+                  <span>{showRankPreview ? 'Hide Rank Progression' : 'Preview Achievable Ranks'}</span>
+                  {showRankPreview ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
               </div>
             </div>
 
@@ -147,6 +164,75 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* Achievable Ranks Full Preview List */}
+          {showRankPreview && (
+            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3 animate-fadeIn">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <Award className="w-4 h-4 text-pink-500" />
+                  <span>All 18 Achievable Career Levels & Ascended Ranks</span>
+                </h4>
+                <span className="text-[10px] text-slate-400 font-bold">18 Total Ranks</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-80 overflow-y-auto pr-1">
+                {CAREER_LEVELS.map((rank) => {
+                  const isUnlocked = currentXp >= rank.xpRequired;
+                  const isCurrent = levelInfo.level === rank.level;
+
+                  return (
+                    <div
+                      key={rank.level}
+                      className={`p-3 rounded-xl border transition-all flex items-start gap-3 ${
+                        isCurrent
+                          ? 'bg-pink-50 dark:bg-pink-950/40 border-pink-400 dark:border-pink-600 ring-2 ring-pink-500/20'
+                          : isUnlocked
+                          ? 'bg-white dark:bg-slate-900 border-emerald-200 dark:border-emerald-800/60'
+                          : 'bg-slate-100/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-60'
+                      }`}
+                    >
+                      <span className="text-2xl shrink-0 mt-0.5">{rank.emoji}</span>
+
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[10px] font-black uppercase text-slate-500">
+                            Level {rank.level}
+                          </span>
+
+                          {isCurrent ? (
+                            <span className="px-2 py-0.5 rounded-full bg-pink-500 text-white font-black text-[9px] uppercase tracking-wide">
+                              Current Rank
+                            </span>
+                          ) : isUnlocked ? (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-[9px] flex items-center gap-1">
+                              <CheckCircle2 className="w-2.5 h-2.5" /> Unlocked
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-[9px] flex items-center gap-1">
+                              <Lock className="w-2.5 h-2.5" /> Locked
+                            </span>
+                          )}
+                        </div>
+
+                        <h5 className="text-xs font-extrabold text-slate-800 dark:text-slate-100 truncate">
+                          {rank.title}
+                        </h5>
+
+                        <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                          <span>{rank.xpRequired.toLocaleString()} XP Required</span>
+                        </div>
+
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 italic line-clamp-2 leading-tight">
+                          {rank.description}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-3 gap-3">

@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, ShieldAlert, FileText, Activity, Settings, RotateCcw, FileEdit, Cross } from 'lucide-react';
+import { Sliders, Volume2, VolumeX, ShieldAlert, FileText, Activity, Settings, RotateCcw, FileEdit, Cross, Music } from 'lucide-react';
 import { EnergyBattery } from './EnergyBattery';
 import { MindsetPulse } from './MindsetPulse';
 import { audioSynth } from '../lib/audioSynth';
-import { AudioType, UserProfile } from '../types';
+import { UserProfile } from '../types';
 
 interface HeaderProps {
   battery: number;
   onRechargeBattery: () => void;
   onDrainBattery: (amount: number) => void;
+  onSetBattery?: (level: number) => void;
   onTogglePanic: () => void;
   onOpenLogs: () => void;
   onOpenProfile: () => void;
   onOpenNotes: () => void;
   onOpenSettings: () => void;
+  onOpenMixer?: () => void;
   onDailyReset: () => void;
   userProfile: UserProfile;
   onUpdateProfile?: (updated: UserProfile) => void;
@@ -23,45 +25,42 @@ export const Header: React.FC<HeaderProps> = ({
   battery,
   onRechargeBattery,
   onDrainBattery,
+  onSetBattery,
   onTogglePanic,
   onOpenLogs,
   onOpenProfile,
   onOpenNotes,
   onOpenSettings,
+  onOpenMixer,
   onDailyReset,
   userProfile,
   onUpdateProfile,
 }) => {
-  const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(audioSynth.getIsPlaying());
-  const [audioType, setAudioType] = useState<AudioType>(userProfile.preferredNoise || 'brown');
-  const [volume, setVolume] = useState<number>(0.2);
+  const [activeTracksCount, setActiveTracksCount] = useState<number>(0);
+  const [masterVol, setMasterVol] = useState<number>(0.5);
 
   useEffect(() => {
-    if (userProfile.preferredNoise && userProfile.preferredNoise !== audioType) {
-      setAudioType(userProfile.preferredNoise);
-    }
-  }, [userProfile.preferredNoise]);
+    const checkTracks = () => {
+      // count active soundscape tracks
+      const activeList = ['brown', 'pink', 'white', 'rain', 'binaural', 'drone', 'office', 'cafe', 'keyboard', 'coffee', 'medieval', 'lofi', 'cute_hyper', 'cute_chill', 'asmr_tapping', 'asmr_rustle', 'asmr_scratch', 'park', 'island_breeze'];
+      const count = activeList.filter((t) => audioSynth.isSoundscapeActive(t as any)).length;
+      setActiveTracksCount(count);
+    };
 
-  const handleAudioToggle = () => {
-    const newState = audioSynth.toggle(audioType);
-    setIsPlayingAudio(newState);
-  };
+    checkTracks();
+    const interval = setInterval(checkTracks, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const handleAudioTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newType = e.target.value as AudioType;
-    setAudioType(newType);
-    if (isPlayingAudio) {
-      audioSynth.play(newType);
+  const handleToggleDefaultSound = () => {
+    if (activeTracksCount > 0) {
+      audioSynth.stopAllSoundscapes();
+      setActiveTracksCount(0);
+    } else {
+      const pref = userProfile.preferredNoise || 'brown';
+      audioSynth.playSoundscape(pref, 0.4);
+      setActiveTracksCount(1);
     }
-    if (onUpdateProfile) {
-      onUpdateProfile({ ...userProfile, preferredNoise: newType });
-    }
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVol = parseFloat(e.target.value);
-    setVolume(newVol);
-    audioSynth.setVolume(newVol);
   };
 
   return (
@@ -93,51 +92,27 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Center Tools: Battery & Audio Synth */}
+        {/* Center Tools: Battery & Nested Multi-Track Soundscape Mixer */}
         <div className="flex flex-wrap items-center gap-3">
-          <EnergyBattery battery={battery} onRecharge={onRechargeBattery} onDrain={onDrainBattery} />
+          <EnergyBattery battery={battery} onRecharge={onRechargeBattery} onDrain={onDrainBattery} onSetBattery={onSetBattery} />
 
-          {/* Ambient Sound Player */}
-          <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 px-3 py-1.5 rounded-full text-xs font-medium text-slate-700">
-            <Activity className="w-3.5 h-3.5 text-pink-500" />
-            <select
-              value={audioType}
-              onChange={handleAudioTypeChange}
-              className="bg-transparent text-slate-800 outline-none cursor-pointer hover:text-pink-600 transition-colors text-xs font-semibold"
-            >
-              <option value="brown">Brown Noise</option>
-              <option value="pink">Pink Noise</option>
-              <option value="white">White Noise</option>
-              <option value="rain">Rain on Glass</option>
-              <option value="binaural">40Hz Binaural</option>
-              <option value="drone">432Hz Calm Drone</option>
-              <option value="office">Office Ambiance</option>
-              <option value="cafe">Coffee Shop</option>
-            </select>
-
-            <input
-              type="range"
-              min="0"
-              max="0.5"
-              step="0.01"
-              value={volume}
-              onChange={handleVolumeChange}
-              title={`Volume: ${Math.round(volume * 200)}%`}
-              className="w-12 h-1 accent-pink-500 bg-slate-200 rounded-lg cursor-pointer hidden sm:inline-block"
-            />
+          {/* Nested Multi-Track Soundscape Mixer Pill */}
+          <div className="flex items-center gap-2 bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-200 px-3 py-1.5 rounded-full text-xs font-medium text-slate-700 shadow-2xs">
+            <Music className="w-3.5 h-3.5 text-pink-500" />
 
             <button
-              onClick={handleAudioToggle}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                isPlayingAudio
+              onClick={handleToggleDefaultSound}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                activeTracksCount > 0
                   ? 'bg-pink-500 text-white shadow-sm shadow-pink-500/30'
                   : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-100'
               }`}
+              title="Toggle default soundscape or stop all playing tracks"
             >
-              {isPlayingAudio ? (
+              {activeTracksCount > 0 ? (
                 <>
                   <Volume2 className="w-3.5 h-3.5 animate-pulse" />
-                  <span>Playing</span>
+                  <span>{activeTracksCount} Active</span>
                 </>
               ) : (
                 <>
@@ -146,6 +121,17 @@ export const Header: React.FC<HeaderProps> = ({
                 </>
               )}
             </button>
+
+            {onOpenMixer && (
+              <button
+                onClick={onOpenMixer}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-white hover:bg-pink-100 text-pink-700 border border-pink-300 transition-all cursor-pointer shadow-2xs"
+                title="Open Multi-Track Soundscape Studio Mixer"
+              >
+                <Sliders className="w-3.5 h-3.5 text-pink-500" />
+                <span>Multitrack Mixer</span>
+              </button>
+            )}
           </div>
         </div>
 

@@ -13,7 +13,7 @@ class MultiTrackSynthesizer {
   private activeOfficeAudio: Map<string, PlayingTrack> = new Map();
   private masterVolume: number = 0.5;
 
-  private initCtx() {
+  public initCtx() {
     if (!this.ctx) {
       const AudioContextClass =
         window.AudioContext ||

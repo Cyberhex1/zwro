@@ -163,9 +163,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <div className="flex items-start gap-2.5">
               <div className="p-2 rounded-xl bg-rose-100 text-rose-600 font-bold shrink-0">⚠️</div>
               <div>
-                <h4 className="text-xs font-black text-rose-800 dark:text-rose-200">Reset Account Level & XP?</h4>
+                <h4 className="text-xs font-black text-rose-800 dark:text-rose-200">Reset Account Level, Bits & Streaks?</h4>
                 <p className="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5 leading-relaxed">
-                  Are you sure you want to reset your career rank to <strong>Level 1 (NEET)</strong> with <strong>0 XP</strong>? This will reset your rank progression.
+                  Are you sure you want to reset your career rank to <strong>Level 1 (NEET)</strong>? This will reset your XP, total accumulated bits logged, and zero-dread streaks.
                 </p>
               </div>
             </div>
@@ -184,13 +184,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   if (onResetLevelXP) {
                     onResetLevelXP();
                   } else {
-                    onUpdateProfile({ ...formData, xp: 0 });
+                    onUpdateProfile({ ...formData, xp: 0, totalBitsLogged: 0, streakDays: 0 });
                   }
                   setShowConfirmResetLevel(false);
                 }}
                 className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all cursor-pointer shadow-sm"
               >
-                Yes, Reset Level to 0 XP
+                Yes, Reset Everything
               </button>
             </div>
           </div>
@@ -309,15 +309,42 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </div>
 
             <div>
-              <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Daily Goal Bits</label>
+              <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">
+                Daily Focus Bits Target (1 = Crisis Survival, 12 = Excellent Day)
+              </label>
+              <div className="flex gap-2 mb-2">
+                {[
+                  { count: 1, label: '1 (Crisis 🆘)' },
+                  { count: 3, label: '3 (Flow 🌿)' },
+                  { count: 5, label: '5 (Steady ⚖️)' },
+                  { count: 8, label: '8 (Velocity 🚀)' },
+                  { count: 12, label: '12 (Peak 🌟)' },
+                ].map((preset) => (
+                  <button
+                    key={preset.count}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, dailyGoalBits: preset.count })}
+                    className={`flex-1 py-1 px-1.5 rounded-lg border text-[10px] font-bold transition-all cursor-pointer ${
+                      formData.dailyGoalBits === preset.count
+                        ? 'bg-pink-500 text-white border-pink-500 shadow-2xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-pink-300'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
               <input
                 type="number"
                 min="1"
                 max="50"
                 value={formData.dailyGoalBits}
-                onChange={(e) => setFormData({ ...formData, dailyGoalBits: parseInt(e.target.value) || 3 })}
+                onChange={(e) => setFormData({ ...formData, dailyGoalBits: parseInt(e.target.value) || 1 })}
                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-pink-500 font-medium font-mono"
               />
+              <p className="text-[10px] text-slate-400 mt-1">
+                1 bit is a total victory during executive freeze or meltdown. 12 bits is an outstanding, top-tier day.
+              </p>
             </div>
 
             <div>

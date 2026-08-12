@@ -15,6 +15,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { SoundscapeMixerModal } from './components/SoundscapeMixerModal';
 import { AnalyticsModal } from './components/AnalyticsModal';
 import { TypingSoundEngine } from './components/TypingSoundEngine';
+import { CuteUiDecorator } from './components/CuteUiDecorator';
 import { SessionLog, TodoItem, SymptomLog, UserProfile, NoteItem, ActiveTab } from './types';
 import { initWorkspaceAuth, logoutGoogleWorkspace } from './lib/googleWorkspace';
 import { audioSynth } from './lib/audioSynth';
@@ -182,6 +183,21 @@ export default function App() {
       () => setGoogleUser(null)
     );
     return () => unsubscribe();
+  }, []);
+
+  // Global Audio Context Unlocker on User Interaction
+  useEffect(() => {
+    const unlockAudio = () => {
+      audioSynth.initCtx();
+    };
+    window.addEventListener('click', unlockAudio, { passive: true });
+    window.addEventListener('pointerdown', unlockAudio, { passive: true });
+    window.addEventListener('keydown', unlockAudio, { passive: true });
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+    };
   }, []);
 
   // Subscribe to Firestore data when user is authenticated
@@ -357,6 +373,7 @@ export default function App() {
 
   const handleLogTask = () => {
     addXp(25);
+    handleDrainBattery(8); // Automatically lower battery based on finished bits
     setUserProfile((prev) => {
       const next = {
         ...prev,
@@ -367,7 +384,7 @@ export default function App() {
       }
       return next;
     });
-    triggerToast('✨ 1 Focus Bit Logged (+25 XP)!');
+    triggerToast('✨ 1 Focus Bit Completed (+25 XP)! Cognitive battery auto-lowered.');
   };
 
   // Daily Reset & Log Archiving Logic
@@ -613,8 +630,13 @@ export default function App() {
   };
 
   const handleResetLevelXP = () => {
-    handleUpdateProfile({ ...userProfile, xp: 0 });
-    triggerToast('Account Level & XP reset to Level 1 (NEET)!');
+    handleUpdateProfile({
+      ...userProfile,
+      xp: 0,
+      totalBitsLogged: 0,
+      streakDays: 0,
+    });
+    triggerToast('Account Level, Focus Bits & Streaks reset to Level 1 (NEET)!');
   };
 
   // Tab Order definitions
@@ -633,17 +655,20 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50/70 via-slate-50 to-purple-50/50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 text-slate-800 dark:text-slate-100 p-4 md:p-6 lg:p-8 flex justify-center font-sans antialiased selection:bg-pink-500/20">
       <TypingSoundEngine enabled={userProfile.typingSounds !== false} />
+      <CuteUiDecorator enabled={userProfile.cuteUiEffects !== false} />
       <div className="max-w-4xl w-full space-y-6">
         {/* Header */}
         <Header
           battery={battery}
           onRechargeBattery={handleRechargeBattery}
           onDrainBattery={handleDrainBattery}
+          onSetBattery={(level) => setBattery(level)}
           onTogglePanic={() => setIsPanicOpen(true)}
           onOpenLogs={() => setIsLogsOpen(true)}
           onOpenProfile={() => setIsProfileOpen(true)}
           onOpenNotes={() => setIsNotesOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenMixer={() => setIsMixerOpen(true)}
           onDailyReset={handleDailyReset}
           userProfile={userProfile}
           onUpdateProfile={handleUpdateProfile}

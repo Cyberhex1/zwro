@@ -610,17 +610,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           <form onSubmit={handleSave} className="space-y-4">
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Daily Focus Bits Target</label>
+              <label className="font-bold text-slate-700 block mb-1">Daily Focus Bits Target Scale</label>
               <select
                 value={dailyGoal}
                 onChange={(e) => setDailyGoal(parseInt(e.target.value, 10))}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 font-semibold focus:outline-none focus:border-pink-500 cursor-pointer"
               >
-                <option value={3}>3 Focus Bits (Crisis Mode)</option>
-                <option value={5}>5 Focus Bits (Gentle Baseline)</option>
-                <option value={8}>8 Focus Bits (Expanded Flow)</option>
-                <option value={12}>12 Focus Bits (High Stamina)</option>
+                <option value={1}>1 Focus Bit (Crisis Survival Mode 🆘 - Executive Freeze Victory)</option>
+                <option value={3}>3 Focus Bits (Low-Adrenaline Micro Flow 🌿)</option>
+                <option value={5}>5 Focus Bits (Balanced Baseline Goal ⚖️)</option>
+                <option value={8}>8 Focus Bits (High Velocity Focus 🚀)</option>
+                <option value={12}>12 Focus Bits (Excellent Day / Peak Capacity 🌟)</option>
               </select>
+              <p className="text-[11px] text-slate-500 mt-1 font-medium">
+                1 bit is crisis mode (completing 1 micro-bit defeats paralysis). 12 bits represents an excellent, high-yield day.
+              </p>
             </div>
 
             <div>
@@ -785,18 +789,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-2">
                 <RotateCcw className="w-4 h-4 text-amber-600" />
-                <span>Account Reset Career Level & XP</span>
+                <span>Account Reset Career Level, Bits & Streaks</span>
               </h3>
               <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">Resets XP to 0</span>
             </div>
 
             <p className="text-amber-800 dark:text-amber-300 text-[11px]">
-              Reset your level progression back to Level 1 (NEET) with 0 XP while preserving your tasks, symptom logs, and notes.
+              Reset your career level progression back to Level 1 (NEET), 0 XP, accumulated bits logged, and zero-dread streaks while preserving your tasks, symptom logs, and notes.
             </p>
 
             {showConfirmResetLevel ? (
               <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-amber-300 dark:border-amber-800 space-y-2">
-                <p className="font-bold text-amber-800 dark:text-amber-300">Are you sure you want to reset your level to Level 1 (0 XP)?</p>
+                <p className="font-bold text-amber-800 dark:text-amber-300">Are you sure you want to reset your level to Level 1 (NEET) and reset accumulated bits & streaks?</p>
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
@@ -811,13 +815,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       if (onResetLevelXP) {
                         onResetLevelXP();
                       } else {
-                        onUpdateProfile({ ...currentProfile, xp: 0 });
+                        onUpdateProfile({ ...currentProfile, xp: 0, totalBitsLogged: 0, streakDays: 0 });
                       }
                       setShowConfirmResetLevel(false);
                     }}
                     className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold cursor-pointer text-xs shadow-sm"
                   >
-                    Yes, Reset Level & XP
+                    Yes, Reset Everything
                   </button>
                 </div>
               </div>
