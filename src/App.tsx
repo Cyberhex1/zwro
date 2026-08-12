@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, ListTodo, Timer, Activity, Building2, Layers, Sparkles, Sliders } from 'lucide-react';
+import { Heart, ListTodo, Timer, Activity, Building2, Layers, Sparkles, Sliders, Wind } from 'lucide-react';
 import { Header } from './components/Header';
 import { SomaticMindsetTab } from './components/SomaticMindsetTab';
 import { TodoFocusBitsTab } from './components/TodoFocusBitsTab';
@@ -7,6 +7,8 @@ import { MicroSprintTimer } from './components/MicroSprintTimer';
 import { MedicalSymptomsTab } from './components/MedicalSymptomsTab';
 import { VirtualOfficeTab } from './components/VirtualOfficeTab';
 import { GoogleWorkspacePanel } from './components/GoogleWorkspacePanel';
+import { MeditationTab } from './components/MeditationTab';
+import { YogaTab } from './components/YogaTab';
 import { PanicOverlay } from './components/PanicOverlay';
 import { SessionLogsModal } from './components/SessionLogsModal';
 import { UserProfileModal } from './components/UserProfileModal';
@@ -117,6 +119,24 @@ const DEFAULT_NOTES: NoteItem[] = [
     pinned: true,
     date: 'Today',
     timestamp: Date.now(),
+  },
+  {
+    id: 'n2',
+    title: 'Unclench & Drop Shoulders 🌸',
+    content: 'Take a sip of water, drop your shoulders away from your ears, and release your lower jaw.',
+    category: 'gentle_reminders',
+    pinned: true,
+    date: 'Today',
+    timestamp: Date.now() - 1000,
+  },
+  {
+    id: 'n3',
+    title: '1 Bit is a Total Victory 🌿',
+    content: 'You do not need to finish everything today. Completing even 1 micro bit breaks executive paralysis.',
+    category: 'gentle_reminders',
+    pinned: false,
+    date: 'Today',
+    timestamp: Date.now() - 2000,
   },
 ];
 
@@ -639,24 +659,34 @@ export default function App() {
     triggerToast('Account Level, Focus Bits & Streaks reset to Level 1 (NEET)!');
   };
 
-  // Tab Order definitions
-  const customTabOrder = userProfile.tabOrder || ['somatic', 'todo', 'medical', 'office', 'shiftLogs'];
+  // Tab Order definitions - Merge saved order with default list to ensure no newly added tabs are omitted
+  const defaultTabList: ActiveTab[] = ['somatic', 'todo', 'sprint', 'meditation', 'yoga', 'medical', 'office', 'shiftLogs', 'workspace'];
+  const userSavedOrder = userProfile.tabOrder || defaultTabList;
+  const missingTabs = defaultTabList.filter((tab) => !userSavedOrder.includes(tab));
+  const customTabOrder = [...userSavedOrder, ...missingTabs];
+
+  const handleSelectTab = (tabKey: ActiveTab) => {
+    audioSynth.playTabSound(userProfile.soundEffects !== false);
+    setActiveTab(tabKey);
+  };
 
   const tabDefs: Record<ActiveTab, { label: string; icon: React.ReactNode }> = {
     somatic: { label: '1. Somatic & Mindset', icon: <Heart className="w-4 h-4" /> },
     todo: { label: '2. To-Do & Focus Bits', icon: <ListTodo className="w-4 h-4" /> },
     sprint: { label: '3. Sprint Engine', icon: <Timer className="w-4 h-4" /> },
-    medical: { label: '4. Medical Symptoms', icon: <Activity className="w-4 h-4" /> },
-    office: { label: '5. Pretend Office', icon: <Building2 className="w-4 h-4" /> },
-    shiftLogs: { label: '6. Shift Logs', icon: <Layers className="w-4 h-4" /> },
-    workspace: { label: '7. Workspace Sync', icon: <Layers className="w-4 h-4" /> },
+    meditation: { label: '4. Meditation & Pacer', icon: <Wind className="w-4 h-4" /> },
+    yoga: { label: '5. Adaptive Yoga', icon: <Sparkles className="w-4 h-4" /> },
+    medical: { label: '6. Medical Symptoms', icon: <Activity className="w-4 h-4" /> },
+    office: { label: '7. Pretend Office', icon: <Building2 className="w-4 h-4" /> },
+    shiftLogs: { label: '8. Shift Logs', icon: <Layers className="w-4 h-4" /> },
+    workspace: { label: '9. Workspace Sync', icon: <Layers className="w-4 h-4" /> },
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50/70 via-slate-50 to-purple-50/50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 text-slate-800 dark:text-slate-100 p-4 md:p-6 lg:p-8 flex justify-center font-sans antialiased selection:bg-pink-500/20">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50/60 via-slate-50 to-purple-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 text-slate-800 dark:text-slate-100 p-3 sm:p-5 md:p-8 flex justify-center font-sans antialiased selection:bg-pink-500/20 max-w-full overflow-x-hidden">
       <TypingSoundEngine enabled={userProfile.typingSounds !== false} />
       <CuteUiDecorator enabled={userProfile.cuteUiEffects !== false} />
-      <div className="max-w-4xl w-full space-y-6">
+      <div className="max-w-4xl w-full min-w-0 space-y-5 sm:space-y-6">
         {/* Header */}
         <Header
           battery={battery}
@@ -675,8 +705,8 @@ export default function App() {
         />
 
         {/* Primary Tab Navigation Bar with Thin Scrollbar */}
-        <div className="relative group">
-          <nav className="flex gap-2 overflow-x-auto pb-2.5 scrollbar-thin scrollbar-thumb-pink-300 dark:scrollbar-thumb-slate-700 hover:scrollbar-thumb-pink-500 transition-all">
+        <div className="relative group max-w-full min-w-0">
+          <nav className="flex gap-2 overflow-x-auto pb-2.5 tab-scrollbar max-w-full min-w-0">
             {customTabOrder.map((tabKey) => {
               const def = tabDefs[tabKey];
               if (!def) return null;
@@ -684,11 +714,11 @@ export default function App() {
               return (
                 <button
                   key={tabKey}
-                  onClick={() => setActiveTab(tabKey)}
-                  className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+                  onClick={() => handleSelectTab(tabKey)}
+                  className={`px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
                     activeTab === tabKey
                       ? 'bg-pink-500 text-white shadow-md shadow-pink-500/20'
-                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      : 'bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                   }`}
                 >
                   {def.icon}
@@ -696,20 +726,11 @@ export default function App() {
                 </button>
               );
             })}
-
-            {/* Always include Soundscape Studio Mixer Button */}
-            <button
-              onClick={() => setIsMixerOpen(true)}
-              className="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer shrink-0 bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/20 hover:opacity-95"
-            >
-              <Sliders className="w-4 h-4" />
-              <span>Multi-Track Soundscape Mixer</span>
-            </button>
           </nav>
         </div>
 
         {/* View Panels */}
-        <main className="bg-white/90 dark:bg-slate-900/90 border border-pink-200/90 dark:border-slate-800 backdrop-blur-xl rounded-3xl p-6 md:p-8 shadow-2xl shadow-pink-500/5">
+        <main className="bg-white/80 dark:bg-slate-900/90 border border-pink-100 dark:border-slate-800 backdrop-blur-xl rounded-3xl p-4 sm:p-6 md:p-8 shadow-xl shadow-pink-500/5 min-w-0 max-w-full overflow-hidden">
           {activeTab === 'somatic' && (
             <SomaticMindsetTab
               onCompleteUnfreeze={() => setActiveTab('todo')}
@@ -736,6 +757,10 @@ export default function App() {
               activeTaskTitle={activeSprintTaskTitle}
             />
           )}
+
+          {activeTab === 'meditation' && <MeditationTab />}
+
+          {activeTab === 'yoga' && <YogaTab />}
 
           {activeTab === 'medical' && (
             <MedicalSymptomsTab

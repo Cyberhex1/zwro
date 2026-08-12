@@ -10,12 +10,18 @@ interface MicroSprintTimerProps {
 }
 
 const SPRINT_PRESETS: SprintConfig[] = [
+  { name: '5 Mins Micro-Burst', workDuration: 300, restDuration: 120 },
   { name: '10 Mins Sprint', workDuration: 600, restDuration: 180 },
   { name: '30 Mins Sprint', workDuration: 1800, restDuration: 300 },
   { name: '60 Mins Sprint', workDuration: 3600, restDuration: 600 },
 ];
 
 const ENCOURAGEMENTS: Record<string, string[]> = {
+  '5 Mins Micro-Burst': [
+    "Victory! 5 full minutes of micro-focus completed without paralysis.",
+    "A 5-minute micro-burst is huge when facing executive friction. Honor this victory!",
+    "5 minutes of gentle progress! Notice how starting was the hardest part.",
+  ],
   '10 Mins Sprint': [
     "Outstanding! 10 full minutes of calm, steady focus. You honored your boundary and showed up without panic.",
     "A perfect 10-minute Focus Bit! Your mind is building momentum through gentle, low-load execution.",

@@ -11,17 +11,41 @@ class MultiTrackSynthesizer {
   private ctx: AudioContext | null = null;
   private activeSoundscapes: Map<string, PlayingTrack> = new Map();
   private activeOfficeAudio: Map<string, PlayingTrack> = new Map();
-  private masterVolume: number = 0.5;
+  private masterVolume: number = 0.6;
+  private isUnlocked: boolean = false;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      const unlockAudio = () => {
+        this.initCtx();
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume().then(() => {
+            this.isUnlocked = true;
+          }).catch(() => {});
+        }
+      };
+
+      ['click', 'touchstart', 'keydown', 'pointerdown'].forEach((evt) => {
+        window.addEventListener(evt, unlockAudio, { passive: true });
+      });
+    }
+  }
 
   public initCtx() {
-    if (!this.ctx) {
-      const AudioContextClass =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.ctx = new AudioContextClass();
-    }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+    try {
+      if (!this.ctx) {
+        const AudioContextClass =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (AudioContextClass) {
+          this.ctx = new AudioContextClass();
+        }
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+    } catch {
+      // AudioContext unavailable
     }
   }
 

@@ -1,4 +1,4 @@
-export type ActiveTab = 'somatic' | 'todo' | 'sprint' | 'medical' | 'office' | 'shiftLogs' | 'workspace';
+export type ActiveTab = 'somatic' | 'todo' | 'sprint' | 'meditation' | 'yoga' | 'medical' | 'office' | 'shiftLogs' | 'workspace';
 
 export type AudioType =
   | 'brown'
@@ -93,7 +93,7 @@ export interface NoteItem {
   id: string;
   title: string;
   content: string;
-  category: 'general' | 'somatic' | 'office' | 'task';
+  category: 'general' | 'somatic' | 'office' | 'task' | 'gentle_reminders';
   pinned: boolean;
   date: string;
   timestamp: number;

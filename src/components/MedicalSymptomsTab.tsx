@@ -111,6 +111,27 @@ export const MedicalSymptomsTab: React.FC<MedicalSymptomsTabProps> = ({
     return 'bg-rose-100 text-rose-800 border-rose-200 animate-pulse';
   };
 
+  const handleDownloadDoctorCSV = () => {
+    const headers = ['Date', 'Symptom & Location', 'Severity (1-10)', 'Triggers', 'Coping Method', 'Notes'];
+    const rows = symptomLogs.map((l) => [
+      `"${l.date}"`,
+      `"${(l.symptomName || '').replace(/"/g, '""')}"`,
+      l.severity,
+      `"${(l.triggers || 'N/A').replace(/"/g, '""')}"`,
+      `"${(l.copingMethod || 'N/A').replace(/"/g, '""')}"`,
+      `"${(l.notes || 'N/A').replace(/"/g, '""')}"`,
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `MentalMedic_Doctor_Symptom_Log_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleExportReport = () => {
     const reportText = `=== MENTAL MEDIC SOMATIC SYMPTOM LOG REPORT ===
 Generated: ${new Date().toLocaleDateString()}
@@ -155,13 +176,24 @@ ${symptomLogs
           </p>
         </div>
 
-        <button
-          onClick={handleExportReport}
-          className="px-3.5 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
-        >
-          {copiedReport ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-pink-500" />}
-          <span>{copiedReport ? 'Clinical Summary Copied!' : 'Export Clinical Summary'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleDownloadDoctorCSV}
+            className="px-3.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+            title="Download formatted CSV spreadsheet for doctor or therapy appointment"
+          >
+            <Download className="w-3.5 h-3.5 text-purple-600" />
+            <span>Download CSV for Doctor</span>
+          </button>
+
+          <button
+            onClick={handleExportReport}
+            className="px-3.5 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+          >
+            {copiedReport ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-pink-500" />}
+            <span>{copiedReport ? 'Clinical Summary Copied!' : 'Copy Summary'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Summary Stat Card */}

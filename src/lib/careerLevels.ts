@@ -51,7 +51,7 @@ export const CAREER_LEVELS: CareerLevel[] = [
   },
   {
     level: 6,
-    title: 'Assistant Manager Hard',
+    title: 'Associate-Try Hard',
     emoji: '👔',
     xpRequired: 6000,
     description: 'Assistant TO the manager. Taking work way too seriously. (~3 weeks)',

@@ -87,6 +87,53 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
 
   const COLORS = ['#ec4899', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
+  const SOMATIC_BADGES = [
+    {
+      id: 'crisis_conqueror',
+      icon: '🆘',
+      title: 'Crisis Conqueror',
+      desc: 'Completed a 1-Bit task during paralysis or low battery.',
+      unlocked: (userProfile.totalBitsLogged || 0) > 0,
+    },
+    {
+      id: 'zero_dread',
+      icon: '🌿',
+      title: 'Zero-Dread Champion',
+      desc: 'Maintained a multi-day streak of zero-adrenaline focus.',
+      unlocked: (userProfile.streakDays || 0) >= 1,
+    },
+    {
+      id: 'soundscape',
+      icon: '🎧',
+      title: 'Soundscape Maestro',
+      desc: 'Layered multiple ambient tracks in the studio mixer.',
+      unlocked: (userProfile.activeSoundscapes && userProfile.activeSoundscapes.length >= 2) || (userProfile.totalBitsLogged || 0) >= 2,
+    },
+    {
+      id: 'self_compassion',
+      icon: '🩺',
+      title: 'Self-Compassion Advocate',
+      desc: 'Logged somatic symptom check-ins to protect health boundaries.',
+      unlocked: symptomLogs.length >= 1,
+    },
+    {
+      id: 'deep_reset',
+      icon: '🫁',
+      title: 'Deep Somatic Reset',
+      desc: 'Completed breathing pacer or grounding exercises.',
+      unlocked: currentXp >= 100,
+    },
+    {
+      id: 'flow_master',
+      icon: '🧘',
+      title: 'Somatic Yoga Initiate',
+      desc: 'Engaged with adaptive yoga or mindfulness routines.',
+      unlocked: currentXp >= 250,
+    },
+  ];
+
+  const achievedBadgesCount = SOMATIC_BADGES.filter((b) => b.unlocked).length;
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
       <div className="bg-white dark:bg-slate-900 border border-pink-200 dark:border-slate-800 rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
@@ -233,6 +280,45 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* Somatic Achievement Badges Section */}
+          <div className="bg-gradient-to-br from-pink-50/50 via-purple-50/50 to-white dark:from-slate-800 dark:to-slate-900 border border-pink-200 dark:border-slate-700 p-4 rounded-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Award className="w-4 h-4 text-pink-500" />
+                <span>Somatic Achievement & Milestone Badges</span>
+              </h4>
+              <span className="text-[10px] text-pink-600 font-bold bg-pink-100 dark:bg-pink-950 px-2.5 py-0.5 rounded-full border border-pink-200">
+                {achievedBadgesCount} / {SOMATIC_BADGES.length} Unlocked
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+              {SOMATIC_BADGES.map((badge) => (
+                <div
+                  key={badge.id}
+                  className={`p-3 rounded-xl border flex items-start gap-2.5 transition-all ${
+                    badge.unlocked
+                      ? 'bg-white dark:bg-slate-900 border-pink-300 dark:border-pink-800 shadow-2xs'
+                      : 'bg-slate-100/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-50'
+                  }`}
+                >
+                  <span className="text-2xl shrink-0 mt-0.5">{badge.icon}</span>
+                  <div className="min-w-0 space-y-0.5">
+                    <div className="flex items-center gap-1">
+                      <h5 className="text-[11px] font-black text-slate-800 dark:text-slate-100 truncate">
+                        {badge.title}
+                      </h5>
+                      {badge.unlocked && <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />}
+                    </div>
+                    <p className="text-[9px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-tight">
+                      {badge.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-3 gap-3">

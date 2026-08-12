@@ -21,7 +21,7 @@ export const NotesDrawer: React.FC<NotesDrawerProps> = ({
 }) => {
   const [title, setTitle] = useState<string>('');
   const [content, setContent] = useState<string>('');
-  const [category, setCategory] = useState<'general' | 'somatic' | 'office' | 'task'>('general');
+  const [category, setCategory] = useState<'general' | 'somatic' | 'office' | 'task' | 'gentle_reminders'>('general');
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
   if (!isOpen) return null;
@@ -82,6 +82,7 @@ export const NotesDrawer: React.FC<NotesDrawerProps> = ({
               className="bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-[11px] text-slate-700 font-medium focus:outline-none focus:border-pink-500 cursor-pointer"
             >
               <option value="general">General</option>
+              <option value="gentle_reminders">Gentle Reminds 🌸</option>
               <option value="somatic">Somatic</option>
               <option value="office">Office</option>
               <option value="task">Tasks</option>
@@ -108,17 +109,17 @@ export const NotesDrawer: React.FC<NotesDrawerProps> = ({
 
         {/* Filter Pills */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 text-[11px] font-semibold scrollbar-none">
-          {['all', 'general', 'somatic', 'office', 'task'].map((cat) => (
+          {['all', 'gentle_reminders', 'general', 'somatic', 'office', 'task'].map((cat) => (
             <button
               key={cat}
               onClick={() => setFilterCategory(cat)}
-              className={`px-3 py-1 rounded-full capitalize transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-full transition-all cursor-pointer whitespace-nowrap ${
                 filterCategory === cat
                   ? 'bg-pink-500 text-white shadow-sm'
                   : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
               }`}
             >
-              {cat}
+              {cat === 'gentle_reminders' ? 'Gentle Reminds 🌸' : cat}
             </button>
           ))}
         </div>
@@ -143,7 +144,9 @@ export const NotesDrawer: React.FC<NotesDrawerProps> = ({
                   <div className="flex items-center gap-1.5">
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                        note.category === 'somatic'
+                        note.category === 'gentle_reminders'
+                          ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                          : note.category === 'somatic'
                           ? 'bg-rose-100 text-rose-700'
                           : note.category === 'office'
                           ? 'bg-blue-100 text-blue-700'
@@ -152,7 +155,7 @@ export const NotesDrawer: React.FC<NotesDrawerProps> = ({
                           : 'bg-slate-100 text-slate-600'
                       }`}
                     >
-                      {note.category}
+                      {note.category === 'gentle_reminders' ? 'Gentle Remind 🌸' : note.category}
                     </span>
                     <h4 className="text-xs font-bold text-slate-800">{note.title}</h4>
                   </div>
