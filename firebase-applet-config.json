@@ -1,12 +1,12 @@
 {
-  "projectId": "academic-incentive-gsc93",
-  "appId": "1:432881024511:web:d29507a8fde6c95ca73bca",
-  "apiKey": "AIzaSyB7gldwyGfvYZlNNy__WRkfxX7fwXov6fw",
-  "authDomain": "academic-incentive-gsc93.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-zeroadrenalinewo-f49a9707-afc1-4dac-9622-13393b7585d1",
-  "storageBucket": "academic-incentive-gsc93.firebasestorage.app",
-  "messagingSenderId": "432881024511",
+  "projectId": "mentalmedic-82280",
+  "appId": "1:185829809608:web:6ed1a8ac8687895dd334fd",
+  "apiKey": "AIzaSyAz1iLblwW3nqiffTrEWuRtP2Rxdd9A8t0",
+  "authDomain": "mentalmedic-82280.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "mentalmedic-82280.firebasestorage.app",
+  "messagingSenderId": "185829809608",
   "measurementId": "",
-  "oAuthClientId": "432881024511-8nh02l0cbrpmjsvk3sdcb6fs48stc8jk.apps.googleusercontent.com",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }

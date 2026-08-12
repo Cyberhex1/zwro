@@ -18,8 +18,13 @@ import { UserProfile, TodoItem, SymptomLog, NoteItem, SessionLog } from '../type
 // Initialize Firebase App
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// CRITICAL: Initialize Firestore with database ID
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// CRITICAL: Initialize Firestore safely with database ID or default
+export const db =
+  firebaseConfig.firestoreDatabaseId &&
+  firebaseConfig.firestoreDatabaseId !== '(default)' &&
+  !firebaseConfig.firestoreDatabaseId.startsWith('(')
+    ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+    : getFirestore(app);
 export const auth = getAuth(app);
 
 // Error Handling Infrastructure
