@@ -11,6 +11,7 @@ import {
   Send,
   Lock,
   Layers,
+  Copy,
 } from 'lucide-react';
 import {
   signInWithGoogleWorkspace,
@@ -37,6 +38,8 @@ export const GoogleWorkspacePanel: React.FC<GoogleWorkspacePanelProps> = ({
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [copiedDomain, setCopiedDomain] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'docs'>('tasks');
 
   // Tasks state
@@ -102,6 +105,7 @@ export const GoogleWorkspacePanel: React.FC<GoogleWorkspacePanelProps> = ({
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
+    setAuthError(null);
     try {
       const res = await signInWithGoogleWorkspace();
       if (res) {
@@ -111,6 +115,12 @@ export const GoogleWorkspacePanel: React.FC<GoogleWorkspacePanelProps> = ({
       }
     } catch (err: any) {
       console.error('Google login failed:', err);
+      const code = err?.code || '';
+      if (code === 'auth/unauthorized-domain' || err?.message?.includes('unauthorized-domain') || err?.message?.includes('invalid')) {
+        setAuthError(`Unauthorized domain: "${window.location.hostname}" needs to be added to Firebase Console Authorized Domains.`);
+      } else {
+        setAuthError(err?.message || 'Failed to sign in with Google');
+      }
     } finally {
       setIsLoggingIn(false);
     }
@@ -226,7 +236,7 @@ export const GoogleWorkspacePanel: React.FC<GoogleWorkspacePanelProps> = ({
           </p>
         </div>
 
-        <div className="pt-2 flex justify-center">
+        <div className="pt-2 flex flex-col items-center gap-3">
           <button
             onClick={handleLogin}
             disabled={isLoggingIn}
@@ -240,6 +250,33 @@ export const GoogleWorkspacePanel: React.FC<GoogleWorkspacePanelProps> = ({
             </svg>
             <span>{isLoggingIn ? 'Connecting...' : 'Sign in with Google'}</span>
           </button>
+
+          {authError && (
+            <div className="w-full max-w-md p-3 bg-amber-50 border border-amber-200 rounded-xl text-left text-amber-900 text-xs space-y-2 mt-2">
+              <div className="flex items-start gap-2 font-bold">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>Google OAuth Domain Authorization Required</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-amber-800">{authError}</p>
+              <div className="pt-1 flex items-center justify-between gap-2 border-t border-amber-200/60">
+                <span className="text-[10px] font-mono font-semibold truncate bg-white/80 px-2 py-0.5 rounded border border-amber-200">
+                  {window.location.hostname}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.hostname);
+                    setCopiedDomain(true);
+                    setTimeout(() => setCopiedDomain(false), 2000);
+                  }}
+                  className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                >
+                  {copiedDomain ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedDomain ? 'Copied Domain!' : 'Copy Domain'}</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

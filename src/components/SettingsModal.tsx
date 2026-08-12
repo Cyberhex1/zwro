@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Settings, User, LogIn, LogOut, Volume2, RotateCcw, ShieldAlert, Trash2, Check, Sparkles, RefreshCw, Download, Upload, Database, FileJson, Sun, Moon } from 'lucide-react';
+import { X, Settings, User, LogIn, LogOut, Volume2, RotateCcw, ShieldAlert, Trash2, Check, Sparkles, RefreshCw, Download, Upload, Database, FileJson, Sun, Moon, AlertTriangle, Copy } from 'lucide-react';
 import { UserProfile, AudioType } from '../types';
 import { signInWithGoogleWorkspace, logoutGoogleWorkspace } from '../lib/googleWorkspace';
 import { User as FirebaseUser } from 'firebase/auth';
@@ -45,6 +45,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   );
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>(currentProfile.theme || 'light');
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [copiedDomain, setCopiedDomain] = useState<boolean>(false);
   const [showConfirmReset, setShowConfirmReset] = useState<boolean>(false);
   const [showConfirmClearAll, setShowConfirmClearAll] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
@@ -75,6 +77,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleGoogleLogin = async () => {
     setIsLoggingIn(true);
+    setLoginError(null);
     try {
       const res = await signInWithGoogleWorkspace();
       if (res?.user) {
@@ -83,8 +86,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           name: res.user.displayName || currentProfile.name,
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login error:', err);
+      const code = err?.code || '';
+      if (code === 'auth/unauthorized-domain' || err?.message?.includes('unauthorized-domain') || err?.message?.includes('invalid')) {
+        setLoginError(`Domain Unauthorized: "${window.location.hostname}" is not authorized in Firebase Console.`);
+      } else {
+        setLoginError(err?.message || 'Failed to sign in with Google');
+      }
     } finally {
       setIsLoggingIn(false);
     }
@@ -225,6 +234,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <LogIn className="w-4 h-4 text-pink-500" />
                   <span>{isLoggingIn ? 'Connecting...' : 'Sign in with Google Account'}</span>
                 </button>
+
+                {loginError && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs space-y-2">
+                    <div className="flex items-start gap-2 font-bold">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <span>Google Login Error</span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-amber-800">{loginError}</p>
+                    <div className="pt-1 flex items-center justify-between gap-2 border-t border-amber-200/60">
+                      <span className="text-[10px] font-mono font-semibold truncate bg-white/80 px-2 py-0.5 rounded border border-amber-200">
+                        {window.location.hostname}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(window.location.hostname);
+                          setCopiedDomain(true);
+                          setTimeout(() => setCopiedDomain(false), 2000);
+                        }}
+                        className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                      >
+                        {copiedDomain ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedDomain ? 'Copied Domain!' : 'Copy Domain'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

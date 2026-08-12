@@ -1,11 +1,12 @@
 {
-  "projectId": "gen-lang-client-0679733632",
-  "appId": "1:530844019247:web:9cecb065ea23030d90b4da",
-  "apiKey": "AIzaSyCazeeMP5W40ZLza5ciYZkHCXcjdXEZbW0",
-  "authDomain": "gen-lang-client-0679733632.firebaseapp.com",
-  "storageBucket": "gen-lang-client-0679733632.firebasestorage.app",
-  "messagingSenderId": "530844019247",
+  "projectId": "academic-incentive-gsc93",
+  "appId": "1:432881024511:web:d29507a8fde6c95ca73bca",
+  "apiKey": "AIzaSyB7gldwyGfvYZlNNy__WRkfxX7fwXov6fw",
+  "authDomain": "academic-incentive-gsc93.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-zeroadrenalinewo-f49a9707-afc1-4dac-9622-13393b7585d1",
+  "storageBucket": "academic-incentive-gsc93.firebasestorage.app",
+  "messagingSenderId": "432881024511",
   "measurementId": "",
-  "oAuthClientId": "530844019247-q47v74v2eo51cm65o18bo77gfuqpm3db.apps.googleusercontent.com",
+  "oAuthClientId": "432881024511-8nh02l0cbrpmjsvk3sdcb6fs48stc8jk.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

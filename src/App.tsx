@@ -15,6 +15,23 @@ import { SettingsModal } from './components/SettingsModal';
 import { SessionLog, TodoItem, SymptomLog, UserProfile, NoteItem } from './types';
 import { initWorkspaceAuth, logoutGoogleWorkspace } from './lib/googleWorkspace';
 import { User } from 'firebase/auth';
+import {
+  saveUserProfileToFirestore,
+  subscribeUserProfileFromFirestore,
+  saveTodoToFirestore,
+  deleteTodoFromFirestore,
+  subscribeTodosFromFirestore,
+  saveSymptomToFirestore,
+  deleteSymptomFromFirestore,
+  subscribeSymptomsFromFirestore,
+  saveNoteToFirestore,
+  deleteNoteFromFirestore,
+  subscribeNotesFromFirestore,
+  saveSessionLogToFirestore,
+  subscribeSessionLogsFromFirestore,
+  saveUserStateToFirestore,
+  subscribeUserStateFromFirestore,
+} from './lib/firebase';
 
 const DEFAULT_PROFILE: UserProfile = {
   name: 'Calm Focus Worker',
@@ -155,9 +172,59 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Subscribe to Firestore data when user is authenticated
+  useEffect(() => {
+    if (!googleUser) return;
+    const uid = googleUser.uid;
+
+    const unsubProfile = subscribeUserProfileFromFirestore(uid, (profile) => {
+      if (profile) setUserProfile(profile);
+    });
+
+    const unsubTodos = subscribeTodosFromFirestore(uid, (remoteTodos) => {
+      if (remoteTodos && remoteTodos.length > 0) {
+        setTodos(remoteTodos);
+      }
+    });
+
+    const unsubSymptoms = subscribeSymptomsFromFirestore(uid, (remoteSymptoms) => {
+      if (remoteSymptoms && remoteSymptoms.length > 0) {
+        setSymptomLogs(remoteSymptoms);
+      }
+    });
+
+    const unsubNotes = subscribeNotesFromFirestore(uid, (remoteNotes) => {
+      if (remoteNotes && remoteNotes.length > 0) {
+        setNotes(remoteNotes);
+      }
+    });
+
+    const unsubLogs = subscribeSessionLogsFromFirestore(uid, (remoteLogs) => {
+      if (remoteLogs && remoteLogs.length > 0) {
+        setSessionLogs(remoteLogs);
+      }
+    });
+
+    const unsubState = subscribeUserStateFromFirestore(uid, (remoteBattery) => {
+      if (typeof remoteBattery === 'number') setBattery(remoteBattery);
+    });
+
+    return () => {
+      unsubProfile();
+      unsubTodos();
+      unsubSymptoms();
+      unsubNotes();
+      unsubLogs();
+      unsubState();
+    };
+  }, [googleUser]);
+
   useEffect(() => {
     localStorage.setItem('zawe_battery', battery.toString());
-  }, [battery]);
+    if (googleUser) {
+      saveUserStateToFirestore(googleUser.uid, battery);
+    }
+  }, [battery, googleUser]);
 
   useEffect(() => {
     localStorage.setItem('zawe_profile', JSON.stringify(userProfile));
@@ -166,7 +233,10 @@ export default function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [userProfile]);
+    if (googleUser) {
+      saveUserProfileToFirestore(googleUser.uid, userProfile);
+    }
+  }, [userProfile, googleUser]);
 
   useEffect(() => {
     localStorage.setItem('zawe_todos', JSON.stringify(todos));
@@ -238,15 +308,22 @@ export default function App() {
     };
 
     setSessionLogs((prev) => [archivedLog, ...prev]);
+    if (googleUser) {
+      saveSessionLogToFirestore(googleUser.uid, archivedLog);
+    }
 
     // Reset daily completed todos and battery
-    setTodos((prev) =>
-      prev.map((t) => ({
+    setTodos((prev) => {
+      const updated = prev.map((t) => ({
         ...t,
         completed: false,
         focusBits: t.focusBits.map((b) => ({ ...b, completed: false })),
-      }))
-    );
+      }));
+      if (googleUser) {
+        updated.forEach((t) => saveTodoToFirestore(googleUser.uid, t));
+      }
+      return updated;
+    });
     setBattery(100);
 
     triggerToast(
@@ -294,17 +371,32 @@ export default function App() {
       createdAt: Date.now(),
     };
     setTodos((prev) => [newTodo, ...prev]);
+    if (googleUser) {
+      saveTodoToFirestore(googleUser.uid, newTodo);
+    }
     triggerToast('Added new task to Matrix');
   };
 
   const handleToggleTodo = (id: string) => {
     setTodos((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
+      prev.map((t) => {
+        if (t.id === id) {
+          const updated = { ...t, completed: !t.completed };
+          if (googleUser) {
+            saveTodoToFirestore(googleUser.uid, updated);
+          }
+          return updated;
+        }
+        return t;
+      })
     );
   };
 
   const handleDeleteTodo = (id: string) => {
     setTodos((prev) => prev.filter((t) => t.id !== id));
+    if (googleUser) {
+      deleteTodoFromFirestore(googleUser.uid, id);
+    }
   };
 
   const handleShatterIntoFocusBits = (todoId: string, bitTitles: string[]) => {
@@ -316,14 +408,19 @@ export default function App() {
     }));
 
     setTodos((prev) =>
-      prev.map((t) =>
-        t.id === todoId
-          ? {
-              ...t,
-              focusBits: [...t.focusBits, ...newBits],
-            }
-          : t
-      )
+      prev.map((t) => {
+        if (t.id === todoId) {
+          const updated = {
+            ...t,
+            focusBits: [...t.focusBits, ...newBits],
+          };
+          if (googleUser) {
+            saveTodoToFirestore(googleUser.uid, updated);
+          }
+          return updated;
+        }
+        return t;
+      })
     );
     triggerToast('Shattered task into zero-dread Focus Bits!');
   };
@@ -335,7 +432,11 @@ export default function App() {
         const updatedBits = t.focusBits.map((b) =>
           b.id === bitId ? { ...b, completed: !b.completed } : b
         );
-        return { ...t, focusBits: updatedBits };
+        const updated = { ...t, focusBits: updatedBits };
+        if (googleUser) {
+          saveTodoToFirestore(googleUser.uid, updated);
+        }
+        return updated;
       })
     );
     handleLogTask();
@@ -362,11 +463,17 @@ export default function App() {
       }),
     };
     setSymptomLogs((prev) => [newLog, ...prev]);
+    if (googleUser) {
+      saveSymptomToFirestore(googleUser.uid, newLog);
+    }
     triggerToast('Logged somatic symptom entry');
   };
 
   const handleDeleteSymptomLog = (id: string) => {
     setSymptomLogs((prev) => prev.filter((l) => l.id !== id));
+    if (googleUser) {
+      deleteSymptomFromFirestore(googleUser.uid, id);
+    }
   };
 
   // Notes handlers
@@ -381,16 +488,31 @@ export default function App() {
       }),
     };
     setNotes((prev) => [newNote, ...prev]);
+    if (googleUser) {
+      saveNoteToFirestore(googleUser.uid, newNote);
+    }
     triggerToast('Saved micro note');
   };
 
   const handleDeleteNote = (id: string) => {
     setNotes((prev) => prev.filter((n) => n.id !== id));
+    if (googleUser) {
+      deleteNoteFromFirestore(googleUser.uid, id);
+    }
   };
 
   const handleTogglePinNote = (id: string) => {
     setNotes((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, pinned: !n.pinned } : n))
+      prev.map((n) => {
+        if (n.id === id) {
+          const updated = { ...n, pinned: !n.pinned };
+          if (googleUser) {
+            saveNoteToFirestore(googleUser.uid, updated);
+          }
+          return updated;
+        }
+        return n;
+      })
     );
   };
 
