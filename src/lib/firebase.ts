@@ -82,7 +82,7 @@ export async function testConnection() {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
+      console.warn('Firebase configuration check: Client is currently offline or loading.');
     }
   }
 }
@@ -309,18 +309,19 @@ export async function syncAllWithFirestore(
   sessionLogs: SessionLog[],
   battery: number
 ) {
-  await saveUserProfileToFirestore(userId, profile);
-  await saveUserStateToFirestore(userId, battery);
-  for (const todo of todos) {
-    await saveTodoToFirestore(userId, todo);
-  }
-  for (const symptom of symptomLogs) {
-    await saveSymptomToFirestore(userId, symptom);
-  }
-  for (const note of notes) {
-    await saveNoteToFirestore(userId, note);
-  }
-  for (const log of sessionLogs) {
-    await saveSessionLogToFirestore(userId, log);
-  }
+  const syncTask = Promise.all([
+    saveUserProfileToFirestore(userId, profile),
+    saveUserStateToFirestore(userId, battery),
+    ...todos.map((todo) => saveTodoToFirestore(userId, todo)),
+    ...symptomLogs.map((symptom) => saveSymptomToFirestore(userId, symptom)),
+    ...notes.map((note) => saveNoteToFirestore(userId, note)),
+    ...sessionLogs.map((log) => saveSessionLogToFirestore(userId, log)),
+  ]);
+
+  // Race against a 5-second timeout so the UI doesn't hang indefinitely
+  // if Firebase is struggling to connect.
+  await Promise.race([
+    syncTask,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Sync timeout')), 5000))
+  ]);
 }

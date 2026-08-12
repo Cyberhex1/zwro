@@ -62,6 +62,7 @@ export interface TodoItem {
   focusBits: FocusBit[];
   dueDate?: string;
   category?: string;
+  project?: string;
   notes?: string;
   createdAt: number;
 }

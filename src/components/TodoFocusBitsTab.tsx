@@ -39,11 +39,12 @@ export const TodoFocusBitsTab: React.FC<TodoFocusBitsTabProps> = ({
   onToggleFocusBit,
   onSendToSprint,
 }) => {
-  const [activeView, setActiveView] = useState<'all' | 'eisenhower' | 'rule135' | 'frogs'>('all');
+  const [activeView, setActiveView] = useState<'all' | 'eisenhower' | 'rule135' | 'frogs' | 'projects'>('all');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'work' | 'admin' | 'care' | 'somatic'>('all');
   const [lowAdrenalineOnly, setLowAdrenalineOnly] = useState<boolean>(false);
 
   const [newTitle, setNewTitle] = useState<string>('');
+  const [newProject, setNewProject] = useState<string>('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [eisenhower, setEisenhower] = useState<EisenhowerCategory>('urgent_important');
   const [rule135, setRule135] = useState<Rule135Category>('small');
@@ -62,6 +63,7 @@ export const TodoFocusBitsTab: React.FC<TodoFocusBitsTabProps> = ({
       eisenhower,
       rule135,
       isFrog,
+      project: newProject.trim() || undefined,
     });
 
     setNewTitle('');
@@ -102,6 +104,142 @@ export const TodoFocusBitsTab: React.FC<TodoFocusBitsTabProps> = ({
     if (lowAdrenalineOnly && todo.rule135 !== 'small') return false;
     return true;
   });
+
+  const renderTodoItem = (todo: TodoItem) => {
+    const completedBitsCount = todo.focusBits?.filter((b) => b.completed).length || 0;
+    const totalBitsCount = todo.focusBits?.length || 0;
+    const bitProgressRatio = totalBitsCount > 0 ? (completedBitsCount / totalBitsCount) * 100 : 0;
+
+    return (
+      <div
+        key={todo.id}
+        className={`p-4 rounded-2xl border transition-all space-y-3 ${
+          todo.completed
+            ? 'bg-slate-50/60 border-slate-200/80 opacity-70'
+            : 'bg-white border-slate-100 hover:border-pink-200 shadow-sm'
+        }`}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <button
+              onClick={() => onToggleTodo(todo.id)}
+              className={`w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 transition-all cursor-pointer ${
+                todo.completed
+                  ? 'bg-pink-500 border-pink-500 text-white'
+                  : 'border-slate-300 hover:border-pink-500 text-transparent'
+              }`}
+            >
+              <Check className="w-3.5 h-3.5 stroke-[3]" />
+            </button>
+
+            <div className="overflow-hidden">
+              <div className="flex items-center gap-2">
+                {todo.isFrog && (
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+                    🐸 FROG
+                  </span>
+                )}
+                {todo.project && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
+                    {todo.project}
+                  </span>
+                )}
+                <h4
+                  className={`text-xs font-bold text-slate-800 truncate ${
+                    todo.completed ? 'line-through text-slate-400' : ''
+                  }`}
+                >
+                  {todo.title}
+                </h4>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => handleDuplicate(todo)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+              title="Duplicate Task"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              onClick={() => handleOpenShatterModal(todo)}
+              className="px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer"
+              title="Shatter this big task into zero-dread Focus Bits"
+            >
+              <Split className="w-3 h-3 text-purple-600" />
+              <span className="hidden sm:inline">Shatter to Bits</span>
+            </button>
+
+            <button
+              onClick={() => onSendToSprint(todo.title)}
+              className="px-2.5 py-1 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer shadow-sm shadow-pink-500/20"
+            >
+              <Zap className="w-3 h-3" />
+              <span>Sprint</span>
+            </button>
+
+            <button
+              onClick={() => onDeleteTodo(todo.id)}
+              className="p-1 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Sub-Focus Bits List & Progress Bar */}
+        {totalBitsCount > 0 && (
+          <div className="ml-8 p-3 bg-pink-50/40 border border-pink-100 rounded-xl space-y-2">
+            <div className="flex items-center justify-between text-[10px] font-bold text-pink-700">
+              <span className="flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-pink-500" />
+                <span>Focus Bits Progress ({completedBitsCount}/{totalBitsCount}):</span>
+              </span>
+              <span className="font-mono">{Math.round(bitProgressRatio)}%</span>
+            </div>
+
+            <div className="w-full h-1.5 bg-pink-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-pink-500 transition-all duration-300"
+                style={{ width: `${bitProgressRatio}%` }}
+              />
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              {todo.focusBits?.map((bit) => (
+                <div
+                  key={bit.id}
+                  onClick={() => onToggleFocusBit(todo.id, bit.id)}
+                  className="flex items-center gap-2 cursor-pointer group"
+                >
+                  <div
+                    className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                      bit.completed
+                        ? 'bg-pink-500 border-pink-500 text-white'
+                        : 'border-slate-300 bg-white group-hover:border-pink-400 text-transparent'
+                    }`}
+                  >
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                  </div>
+                  <span
+                    className={`text-xs text-slate-700 ${
+                      bit.completed ? 'line-through text-slate-400' : ''
+                    }`}
+                  >
+                    {bit.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -167,6 +305,18 @@ export const TodoFocusBitsTab: React.FC<TodoFocusBitsTabProps> = ({
             <span>Eat The Frog</span>
           </button>
 
+          <button
+            onClick={() => setActiveView('projects')}
+            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeView === 'projects'
+                ? 'bg-pink-500 text-white shadow-sm shadow-pink-500/20'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Projects</span>
+          </button>
+
           {/* Low-Adrenaline Mode Filter */}
           <button
             onClick={() => setLowAdrenalineOnly((prev) => !prev)}
@@ -192,6 +342,13 @@ export const TodoFocusBitsTab: React.FC<TodoFocusBitsTabProps> = ({
             onChange={(e) => setNewTitle(e.target.value)}
             placeholder="Add new task (e.g. Write quarter report draft)..."
             className="flex-1 bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:border-pink-500 font-semibold"
+          />
+          <input
+            type="text"
+            value={newProject}
+            onChange={(e) => setNewProject(e.target.value)}
+            placeholder="Project (optional)"
+            className="w-full sm:w-48 bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:border-pink-500 font-semibold"
           />
 
           <button
@@ -360,144 +517,37 @@ export const TodoFocusBitsTab: React.FC<TodoFocusBitsTabProps> = ({
         </div>
       )}
 
-      {/* Main List View (All or Frogs) */}
-      {(activeView === 'all' || activeView === 'frogs') && (
-        <div className="space-y-3">
+      {/* Main List View (All or Frogs or Projects) */}
+      {(activeView === 'all' || activeView === 'frogs' || activeView === 'projects') && (
+        <div className="space-y-6">
           {filteredTodos.length === 0 ? (
             <div className="py-12 text-center text-xs text-slate-400">
               No tasks found matching filter. Create a new task above or toggle filters!
             </div>
-          ) : (
-            filteredTodos.map((todo) => {
-              const completedBitsCount = todo.focusBits?.filter((b) => b.completed).length || 0;
-              const totalBitsCount = todo.focusBits?.length || 0;
-              const bitProgressRatio = totalBitsCount > 0 ? (completedBitsCount / totalBitsCount) * 100 : 0;
-
-              return (
-                <div
-                  key={todo.id}
-                  className={`p-4 rounded-2xl border transition-all space-y-3 ${
-                    todo.completed
-                      ? 'bg-slate-50/60 border-slate-200/80 opacity-70'
-                      : 'bg-white border-slate-100 hover:border-pink-200 shadow-sm'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <button
-                        onClick={() => onToggleTodo(todo.id)}
-                        className={`w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 transition-all cursor-pointer ${
-                          todo.completed
-                            ? 'bg-pink-500 border-pink-500 text-white'
-                            : 'border-slate-300 hover:border-pink-500 text-transparent'
-                        }`}
-                      >
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      </button>
-
-                      <div className="overflow-hidden">
-                        <div className="flex items-center gap-2">
-                          {todo.isFrog && (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
-                              🐸 FROG
-                            </span>
-                          )}
-                          <h4
-                            className={`text-xs font-bold text-slate-800 truncate ${
-                              todo.completed ? 'line-through text-slate-400' : ''
-                            }`}
-                          >
-                            {todo.title}
-                          </h4>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        onClick={() => handleDuplicate(todo)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
-                        title="Duplicate Task"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleOpenShatterModal(todo)}
-                        className="px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer"
-                        title="Shatter this big task into zero-dread Focus Bits"
-                      >
-                        <Split className="w-3 h-3 text-purple-600" />
-                        <span>Shatter to Bits</span>
-                      </button>
-
-                      <button
-                        onClick={() => onSendToSprint(todo.title)}
-                        className="px-2.5 py-1 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer shadow-sm shadow-pink-500/20"
-                      >
-                        <Zap className="w-3 h-3" />
-                        <span>Sprint</span>
-                      </button>
-
-                      <button
-                        onClick={() => onDeleteTodo(todo.id)}
-                        className="p-1 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Sub-Focus Bits List & Progress Bar */}
-                  {totalBitsCount > 0 && (
-                    <div className="ml-8 p-3 bg-pink-50/40 border border-pink-100 rounded-xl space-y-2">
-                      <div className="flex items-center justify-between text-[10px] font-bold text-pink-700">
-                        <span className="flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-pink-500" />
-                          <span>Focus Bits Progress ({completedBitsCount}/{totalBitsCount}):</span>
-                        </span>
-                        <span className="font-mono">{Math.round(bitProgressRatio)}%</span>
-                      </div>
-
-                      <div className="w-full h-1.5 bg-pink-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-pink-500 transition-all duration-300"
-                          style={{ width: `${bitProgressRatio}%` }}
-                        />
-                      </div>
-
-                      <div className="space-y-1.5 pt-1">
-                        {todo.focusBits?.map((bit) => (
-                          <div
-                            key={bit.id}
-                            onClick={() => onToggleFocusBit(todo.id, bit.id)}
-                            className="flex items-center gap-2 cursor-pointer group"
-                          >
-                            <div
-                              className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                                bit.completed
-                                  ? 'bg-pink-500 border-pink-500 text-white'
-                                  : 'border-slate-300 bg-white group-hover:border-pink-400 text-transparent'
-                              }`}
-                            >
-                              <Check className="w-2.5 h-2.5 stroke-[3]" />
-                            </div>
-                            <span
-                              className={`text-xs text-slate-700 ${
-                                bit.completed ? 'line-through text-slate-400' : ''
-                              }`}
-                            >
-                              {bit.title}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+          ) : activeView === 'projects' ? (
+            // Group by project
+            Object.entries(
+              filteredTodos.reduce((acc, todo) => {
+                const proj = todo.project || 'Uncategorized';
+                if (!acc[proj]) acc[proj] = [];
+                acc[proj].push(todo);
+                return acc;
+              }, {} as Record<string, TodoItem[]>)
+            ).map(([projectName, projTodos]) => (
+              <div key={projectName} className="space-y-3">
+                <h4 className="text-sm font-bold text-slate-800 border-b border-slate-200 pb-1 flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-pink-500" />
+                  {projectName}
+                </h4>
+                <div className="space-y-3">
+                  {(projTodos as TodoItem[]).map((todo) => renderTodoItem(todo))}
                 </div>
-              );
-            })
+              </div>
+            ))
+          ) : (
+            <div className="space-y-3">
+              {filteredTodos.map((todo) => renderTodoItem(todo))}
+            </div>
           )}
         </div>
       )}

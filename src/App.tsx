@@ -671,19 +671,19 @@ export default function App() {
   };
 
   const tabDefs: Record<ActiveTab, { label: string; icon: React.ReactNode }> = {
-    somatic: { label: '1. Somatic & Mindset', icon: <Heart className="w-4 h-4" /> },
-    todo: { label: '2. To-Do & Focus Bits', icon: <ListTodo className="w-4 h-4" /> },
-    sprint: { label: '3. Sprint Engine', icon: <Timer className="w-4 h-4" /> },
-    meditation: { label: '4. Meditation & Pacer', icon: <Wind className="w-4 h-4" /> },
-    yoga: { label: '5. Adaptive Yoga', icon: <Sparkles className="w-4 h-4" /> },
-    medical: { label: '6. Medical Symptoms', icon: <Activity className="w-4 h-4" /> },
-    office: { label: '7. Pretend Office', icon: <Building2 className="w-4 h-4" /> },
-    shiftLogs: { label: '8. Shift Logs', icon: <Layers className="w-4 h-4" /> },
-    workspace: { label: '9. Workspace Sync', icon: <Layers className="w-4 h-4" /> },
+    somatic: { label: 'Somatic & Mindset', icon: <Heart className="w-4 h-4" /> },
+    todo: { label: 'To-Do & Focus Bits', icon: <ListTodo className="w-4 h-4" /> },
+    sprint: { label: 'Sprint Engine', icon: <Timer className="w-4 h-4" /> },
+    meditation: { label: 'Meditation & Pacer', icon: <Wind className="w-4 h-4" /> },
+    yoga: { label: 'Adaptive Yoga', icon: <Sparkles className="w-4 h-4" /> },
+    medical: { label: 'Medical Symptoms', icon: <Activity className="w-4 h-4" /> },
+    office: { label: 'Pretend Office', icon: <Building2 className="w-4 h-4" /> },
+    shiftLogs: { label: 'Shift Logs', icon: <Layers className="w-4 h-4" /> },
+    workspace: { label: 'Workspace Sync', icon: <Layers className="w-4 h-4" /> },
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50/60 via-slate-50 to-purple-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 text-slate-800 dark:text-slate-100 p-3 sm:p-5 md:p-8 flex justify-center font-sans antialiased selection:bg-pink-500/20 max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-pink-50/50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 p-3 sm:p-5 md:p-8 flex justify-center font-sans antialiased selection:bg-pink-500/20 max-w-full overflow-x-hidden">
       <TypingSoundEngine enabled={userProfile.typingSounds !== false} />
       <CuteUiDecorator enabled={userProfile.cuteUiEffects !== false} />
       <div className="max-w-4xl w-full min-w-0 space-y-5 sm:space-y-6">

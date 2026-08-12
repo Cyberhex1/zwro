@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Sun, Moon, Sparkles, Heart, Shield, Check, Info } from 'lucide-react';
 import { audioSynth } from '../lib/audioSynth';
 
-export type BodyType = 'regular' | 'disabled' | 'large';
+export type BodyType = 'able_bodied' | 'disabled' | 'plus_size';
 export type YogaLevel = 'level1' | 'level2' | 'level3';
 export type TimeOfDay = 'day' | 'night';
 
@@ -33,18 +33,22 @@ const PoseIllustration: React.FC<{ svgType: YogaPose['svgType'] }> = ({ svgType 
         className="w-full h-full text-pink-500"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2.5"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
+        {/* Soft floor/mat line across all poses */}
+        <path d="M40 105 L160 105" stroke="#fbcfe8" strokeWidth="1.5" strokeDasharray="4 4" />
+
         {svgType === 'seated_reach' && (
           <g>
             {/* Chair outline */}
-            <path d="M60 70 L140 70 M75 70 L75 105 M125 70 L125 105 M75 40 L75 70" stroke="#f472b6" strokeWidth="1.5" strokeDasharray="3 3" />
+            <path d="M60 70 L140 70 M75 70 L75 105 M125 70 L125 105 M75 35 L75 70" stroke="#f9a8d4" strokeWidth="1.5" strokeDasharray="3 3" />
             {/* Seated Figure */}
-            <circle cx="100" cy="35" r="10" />
-            <path d="M100 45 L100 70 M100 55 L70 25 M100 55 L130 25" />
-            <path d="M100 70 L80 90 M100 70 L120 90" />
+            <circle cx="100" cy="30" r="10" />
+            <path d="M100 40 Q95 55 100 70" /> {/* Curvy torso */}
+            <path d="M100 70 L80 90 M100 70 L120 90" /> {/* Legs */}
+            <path d="M100 50 Q85 30 70 25 M100 50 Q115 30 130 25" /> {/* Reaching arms */}
             {/* Energy sparkles */}
             <path d="M60 20 L65 20 M62.5 17.5 L62.5 22.5" stroke="#ec4899" strokeWidth="1.5" />
             <path d="M140 20 L145 20 M142.5 17.5 L142.5 22.5" stroke="#ec4899" strokeWidth="1.5" />
@@ -54,79 +58,81 @@ const PoseIllustration: React.FC<{ svgType: YogaPose['svgType'] }> = ({ svgType 
         {svgType === 'cat_cow' && (
           <g>
             {/* Tabletop / Seated Spine Wave */}
-            <circle cx="45" cy="45" r="9" />
-            <path d="M50 50 Q100 65 150 50" />
-            <path d="M70 58 L70 95 M130 55 L130 95" />
-            <path d="M90 60 Q100 45 110 60" stroke="#f472b6" strokeWidth="1.5" />
+            <circle cx="45" cy="40" r="10" />
+            <path d="M52 48 Q95 65 145 45" /> {/* Curvy spine */}
+            <path d="M70 58 Q70 75 70 95 M130 50 Q130 75 130 95" /> {/* Limbs */}
+            <path d="M85 60 Q100 45 115 60" stroke="#f9a8d4" strokeWidth="1.5" /> {/* Wave indicator */}
           </g>
         )}
 
         {svgType === 'child_pose' && (
           <g>
             {/* Supported Rest / Child's Pose */}
-            <circle cx="145" cy="70" r="9" />
-            <path d="M60 75 Q100 60 138 68" />
-            <path d="M50 85 L80 85 M100 85 L140 85" stroke="#f472b6" strokeWidth="1.5" />
-            <path d="M140 75 L170 75" />
+            <circle cx="145" cy="70" r="10" />
+            <path d="M60 75 Q100 55 135 65" /> {/* Curvy back */}
+            <path d="M50 85 Q75 80 80 85 M100 85 L140 85" stroke="#f9a8d4" strokeWidth="1.5" /> {/* Folded arms & legs */}
+            <path d="M140 75 Q155 75 170 75" /> {/* Arm reach */}
           </g>
         )}
 
         {svgType === 'forward_fold' && (
           <g>
             {/* Seated or Standing Gentle Forward Fold */}
-            <circle cx="95" cy="75" r="9" />
-            <path d="M100 40 L100 95" stroke="#f472b6" strokeWidth="1.5" />
-            <path d="M100 40 Q100 70 92 68" />
-            <path d="M90 68 L60 90" />
+            <circle cx="95" cy="75" r="10" />
+            <path d="M100 40 Q105 70 100 95" stroke="#f9a8d4" strokeWidth="1.5" /> {/* Legs */}
+            <path d="M100 40 Q105 60 90 65" /> {/* Curvy torso folding down */}
+            <path d="M88 65 Q70 85 60 90" /> {/* Arms */}
           </g>
         )}
 
         {svgType === 'spinal_twist' && (
           <g>
             {/* Gentle Spinal Twist */}
-            <circle cx="100" cy="30" r="9" />
-            <path d="M100 39 L100 75" />
-            <path d="M100 50 C80 40 80 60 100 50 C120 40 120 60 100 50" stroke="#f472b6" />
-            <path d="M100 75 L80 100 M100 75 L120 100" />
+            <circle cx="100" cy="25" r="10" />
+            <path d="M100 35 Q95 55 100 75" /> {/* Torso */}
+            <path d="M100 50 C75 40 75 60 100 50 C125 40 125 60 100 50" stroke="#f9a8d4" strokeWidth="1.5" /> {/* Twist motion arrows */}
+            <path d="M100 75 Q85 85 80 100 M100 75 Q115 85 120 100" /> {/* Legs */}
           </g>
         )}
 
         {svgType === 'standing_tall' && (
           <g>
             {/* Mountain Pose / Seated Tall Posture */}
-            <circle cx="100" cy="25" r="9" />
-            <path d="M100 34 L100 75 M100 45 L75 60 M100 45 L125 60 M100 75 L85 105 M100 75 L115 105" />
-            <path d="M100 12 L100 8" stroke="#ec4899" strokeWidth="2" />
+            <circle cx="100" cy="20" r="10" />
+            <path d="M100 30 Q103 50 100 75" /> {/* Torso */}
+            <path d="M100 40 Q85 55 75 60 M100 40 Q115 55 125 60" /> {/* Arms outward */}
+            <path d="M100 75 Q90 90 85 105 M100 75 Q110 90 115 105" /> {/* Legs */}
+            <path d="M100 12 L100 5" stroke="#ec4899" strokeWidth="2" /> {/* Crown lifting */}
           </g>
         )}
 
         {svgType === 'chest_opener' && (
           <g>
             {/* Gentle Chest Opener */}
-            <circle cx="95" cy="30" r="9" />
-            <path d="M95 39 C105 55 105 70 95 80" />
-            <path d="M95 48 L65 40 M95 48 L125 40" stroke="#ec4899" />
-            <path d="M95 80 L80 105 M95 80 L110 105" />
+            <circle cx="95" cy="25" r="10" />
+            <path d="M95 35 C110 50 110 65 95 80" /> {/* Chest expanding */}
+            <path d="M95 45 Q75 40 65 35 M95 45 Q115 40 125 35" stroke="#ec4899" strokeWidth="1.5" /> {/* Arms sweeping back */}
+            <path d="M95 80 Q85 95 80 105 M95 80 Q105 95 110 105" /> {/* Legs */}
           </g>
         )}
 
         {svgType === 'legs_up_wall' && (
           <g>
             {/* Wall line */}
-            <path d="M140 10 L140 105" stroke="#f472b6" strokeWidth="2" />
+            <path d="M140 10 L140 105" stroke="#f9a8d4" strokeWidth="2" />
             {/* Reclined figure with legs up */}
-            <circle cx="50" cy="90" r="9" />
-            <path d="M59 90 L110 90 M110 90 L110 20 M110 90 L138 20" />
-            <path d="M75 90 L75 105 M85 90 L85 105" />
+            <circle cx="45" cy="88" r="10" />
+            <path d="M55 88 Q85 90 110 88 M110 88 L110 20 M110 88 Q125 50 138 20" /> {/* Torso & Legs */}
+            <path d="M75 88 Q75 98 75 105 M85 88 Q85 98 85 105" /> {/* Resting arms */}
           </g>
         )}
 
         {svgType === 'bound_angle' && (
           <g>
             {/* Reclined / Seated Butterfly Bound Angle */}
-            <circle cx="100" cy="30" r="9" />
-            <path d="M100 39 L100 70 M100 70 Q70 85 100 95 M100 70 Q130 85 100 95" />
-            <path d="M100 50 L75 65 M100 50 L125 65" stroke="#f472b6" />
+            <circle cx="100" cy="25" r="10" />
+            <path d="M100 35 Q105 55 100 70 M100 70 Q70 85 100 95 M100 70 Q130 85 100 95" />
+            <path d="M100 45 Q85 55 75 65 M100 45 Q115 55 125 65" stroke="#f9a8d4" strokeWidth="1.5" />
           </g>
         )}
       </svg>
@@ -136,10 +142,10 @@ const PoseIllustration: React.FC<{ svgType: YogaPose['svgType'] }> = ({ svgType 
 
 // 9 Static Plans Map (3 Body Types x 3 Levels), each with Day and Night modes = 18 tailored sessions
 const YOGA_PLANS: Record<string, YogaPlan> = {
-  // REGULAR BODIES
-  'regular-level1': {
-    id: 'regular-level1',
-    title: 'Regular Body — Level 1: Gentle Grounding',
+  // ABLE-BODIED
+  'able_bodied-level1': {
+    id: 'able_bodied-level1',
+    title: 'Able-Bodied — Level 1: Gentle Grounding',
     durationMinutes: 8,
     description: 'Low-impact micro-movements designed to release neck, shoulder, and spinal tension without strain.',
     dayPoses: [
@@ -195,9 +201,9 @@ const YOGA_PLANS: Record<string, YogaPlan> = {
       },
     ],
   },
-  'regular-level2': {
-    id: 'regular-level2',
-    title: 'Regular Body — Level 2: Soft Mobility & Flow',
+  'able_bodied-level2': {
+    id: 'able_bodied-level2',
+    title: 'Able-Bodied Body — Level 2: Soft Mobility & Flow',
     durationMinutes: 10,
     description: 'Flowing movement sequences to restore circulatory energy and spinal flexibility.',
     dayPoses: [
@@ -245,9 +251,9 @@ const YOGA_PLANS: Record<string, YogaPlan> = {
       },
     ],
   },
-  'regular-level3': {
-    id: 'regular-level3',
-    title: 'Regular Body — Level 3: Deep Restorative Unwinding',
+  'able_bodied-level3': {
+    id: 'able_bodied-level3',
+    title: 'Able-Bodied Body — Level 3: Deep Restorative Unwinding',
     durationMinutes: 12,
     description: 'Extended holds for deep connective tissue release and complete nervous system calm.',
     dayPoses: [
@@ -353,6 +359,14 @@ const YOGA_PLANS: Record<string, YogaPlan> = {
         somaticTip: 'Opens ribcage for fuller lung capacity.',
         svgType: 'seated_reach',
       },
+      {
+        id: 'd2d3',
+        name: 'Seated Hip & Leg Extensions',
+        duration: '8 smooth cycles',
+        instruction: 'If possible, extend one leg out, gently flexing the foot. Or gently tap toes.',
+        somaticTip: 'Stimulates circulation in lower extremities while remaining secure.',
+        svgType: 'standing_tall',
+      }
     ],
     nightPoses: [
       {
@@ -362,6 +376,14 @@ const YOGA_PLANS: Record<string, YogaPlan> = {
         instruction: 'Gently turn torso right using chair back or armrest for support.',
         somaticTip: 'Winds down autonomic arousal.',
         svgType: 'spinal_twist',
+      },
+      {
+        id: 'd2n2',
+        name: 'Supported Bedside Head Rest',
+        duration: '10 deep breaths',
+        instruction: 'Fold arms on a table or bed edge in front of you, rest your forehead on them.',
+        somaticTip: 'Relieves cervical spine pressure for restorative sleep preparation.',
+        svgType: 'forward_fold',
       },
     ],
   },
@@ -379,23 +401,39 @@ const YOGA_PLANS: Record<string, YogaPlan> = {
         somaticTip: 'Complete mental and nervous system reset.',
         svgType: 'forward_fold',
       },
+      {
+        id: 'd3d2',
+        name: 'Seated Shoulder Drop',
+        duration: '8 deep breaths',
+        instruction: 'Intentionally let shoulders drop completely limp, supported by chair arms.',
+        somaticTip: 'Disengages trapezius muscles fully.',
+        svgType: 'chest_opener',
+      },
     ],
     nightPoses: [
       {
         id: 'd3n1',
         name: 'Seated Bedside Soft Forward Recline',
         duration: '12 soft breaths',
-        instruction: 'Lean forward onto bed or large cushion with full upper body weight supported.',
+        instruction: 'Lean forward onto bed or plus_size cushion with full upper body weight supported.',
         somaticTip: 'Prepares brain for deep restorative sleep.',
         svgType: 'bound_angle',
+      },
+      {
+        id: 'd3n2',
+        name: 'Seated Palm-Over-Heart Rest',
+        duration: '10 soft breaths',
+        instruction: 'Place both hands gently over your heart center, eyes closed.',
+        somaticTip: 'Provides self-soothing pressure to lower heart rate.',
+        svgType: 'seated_reach',
       },
     ],
   },
 
   // LARGE / CURVY / EXTRA ROOM BODIES
-  'large-level1': {
-    id: 'large-level1',
-    title: 'Large & Curvy Body — Level 1: Extra Room & Joint Support',
+  'plus_size-level1': {
+    id: 'plus_size-level1',
+    title: 'Plus-Size & Curvy Body — Level 1: Extra Room & Joint Support',
     durationMinutes: 8,
     description: 'Designed specifically with wide stance variations, chest/belly room adjustments, and zero joint pinching.',
     dayPoses: [
@@ -415,6 +453,14 @@ const YOGA_PLANS: Record<string, YogaPlan> = {
         somaticTip: 'Honor your body curvature—never compress your breath.',
         svgType: 'forward_fold',
       },
+      {
+        id: 'l1d3',
+        name: 'Open Chest Expansion',
+        duration: '6 slow breaths',
+        instruction: 'Inhale and open arms wide to the sides, lifting the chin slightly.',
+        somaticTip: 'Creates space across the chest and collarbones without back compression.',
+        svgType: 'chest_opener',
+      },
     ],
     nightPoses: [
       {
@@ -425,11 +471,19 @@ const YOGA_PLANS: Record<string, YogaPlan> = {
         somaticTip: 'Pillows elevate chest so breathing remains effortless.',
         svgType: 'child_pose',
       },
+      {
+        id: 'l1n2',
+        name: 'Gentle Supine Twist with Props',
+        duration: '6 breaths each side',
+        instruction: 'Lie on back, let knees fall to one side onto a stack of thick pillows.',
+        somaticTip: 'The pillows prevent hip pain and lower back dragging.',
+        svgType: 'spinal_twist',
+      },
     ],
   },
-  'large-level2': {
-    id: 'large-level2',
-    title: 'Large & Curvy Body — Level 2: Gentle Curvy Flow',
+  'plus_size-level2': {
+    id: 'plus_size-level2',
+    title: 'Plus-Size & Curvy Body — Level 2: Gentle Curvy Flow',
     durationMinutes: 10,
     description: 'Spacious movement flows tailored for joint comfort, hip freedom, and breathing ease.',
     dayPoses: [
@@ -441,6 +495,14 @@ const YOGA_PLANS: Record<string, YogaPlan> = {
         somaticTip: 'Creates side-body space without knee strain.',
         svgType: 'seated_reach',
       },
+      {
+        id: 'l2d2',
+        name: 'Wide-Knee Cat-Cow',
+        duration: '8 cycles',
+        instruction: 'From a wide-knee tabletop position, gently flow between arching and rounding the spine.',
+        somaticTip: 'Wider knees allow the belly to drop comfortably during Cow pose.',
+        svgType: 'cat_cow',
+      },
     ],
     nightPoses: [
       {
@@ -451,11 +513,19 @@ const YOGA_PLANS: Record<string, YogaPlan> = {
         somaticTip: 'Restores spinal alignment without tightness.',
         svgType: 'bound_angle',
       },
+      {
+        id: 'l2n2',
+        name: 'Legs Up the Wall (Elevated)',
+        duration: '8 deep breaths',
+        instruction: 'Rest legs on the wall with a firm folded blanket lifting your pelvis.',
+        somaticTip: 'Improves circulation and takes weight off the joints.',
+        svgType: 'legs_up_wall',
+      },
     ],
   },
-  'large-level3': {
-    id: 'large-level3',
-    title: 'Large & Curvy Body — Level 3: Deep Spacious Restorative',
+  'plus_size-level3': {
+    id: 'plus_size-level3',
+    title: 'Plus-Size & Curvy Body — Level 3: Deep Spacious Restorative',
     durationMinutes: 12,
     description: 'Luxurious restorative positions with full prop elevation and spacious breathing freedom.',
     dayPoses: [
@@ -467,6 +537,14 @@ const YOGA_PLANS: Record<string, YogaPlan> = {
         somaticTip: 'Expands lung capacity and lifts posture.',
         svgType: 'chest_opener',
       },
+      {
+        id: 'l3d2',
+        name: 'Spacious Supported Forward Rest',
+        duration: '10 slow breaths',
+        instruction: 'Sit on a cushion and fold forward over a large stack of pillows, letting arms dangle.',
+        somaticTip: 'Provides complete spinal release with full front-body support.',
+        svgType: 'forward_fold',
+      },
     ],
     nightPoses: [
       {
@@ -477,19 +555,27 @@ const YOGA_PLANS: Record<string, YogaPlan> = {
         somaticTip: 'Soothes swollen ankles and heavy legs effortlessly.',
         svgType: 'legs_up_wall',
       },
+      {
+        id: 'l3n2',
+        name: 'Side-Lying Savasana with Body Pillow',
+        duration: '12 deep breaths',
+        instruction: 'Lie on your side hugging a thick body pillow between your knees and arms.',
+        somaticTip: 'Maintains neutral spine alignment and prevents lower back pulling.',
+        svgType: 'bound_angle',
+      }
     ],
   },
 };
 
 export const YogaTab: React.FC = () => {
-  const [bodyType, setBodyType] = useState<BodyType>('regular');
+  const [bodyType, setBodyType] = useState<BodyType>('able_bodied');
   const [level, setLevel] = useState<YogaLevel>('level1');
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>('day');
   const [activePoseIdx, setActivePoseIdx] = useState<number>(0);
 
   // Derive current plan key
   const planKey = `${bodyType}-${level}`;
-  const currentPlan = YOGA_PLANS[planKey] || YOGA_PLANS['regular-level1'];
+  const currentPlan = YOGA_PLANS[planKey] || YOGA_PLANS['able_bodied-level1'];
   const activePoses = timeOfDay === 'day' ? currentPlan.dayPoses : currentPlan.nightPoses;
   const activePose = activePoses[activePoseIdx] || activePoses[0];
 
@@ -518,7 +604,7 @@ export const YogaTab: React.FC = () => {
             <span>Somatic Adaptive Yoga Studio</span>
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Body-adapted yoga routines tailored for Regular, Disabled/Seated, and Large/Curvy bodies.
+            Body-adapted yoga routines tailored for Able-Bodied, Disabled/Seated, and Large/Curvy bodies.
           </p>
         </div>
 
@@ -559,17 +645,17 @@ export const YogaTab: React.FC = () => {
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
-              onClick={() => handleSelectBodyType('regular')}
+              onClick={() => handleSelectBodyType('able_bodied')}
               className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                bodyType === 'regular'
+                bodyType === 'able_bodied'
                   ? 'bg-pink-500 text-white border-pink-500 shadow-md shadow-pink-500/20'
                   : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-pink-300'
               }`}
             >
-              <span className="text-xs font-extrabold block">🌿 Regular Bodies</span>
+              <span className="text-xs font-extrabold block">🌿 Able-Bodied Bodies</span>
               <span
                 className={`text-[10px] mt-0.5 block ${
-                  bodyType === 'regular' ? 'text-pink-100' : 'text-slate-400'
+                  bodyType === 'able_bodied' ? 'text-pink-100' : 'text-slate-400'
                 }`}
               >
                 Standard mobility & standing/floor postures
@@ -595,9 +681,9 @@ export const YogaTab: React.FC = () => {
             </button>
 
             <button
-              onClick={() => handleSelectBodyType('large')}
+              onClick={() => handleSelectBodyType('plus_size')}
               className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
-                bodyType === 'large'
+                bodyType === 'plus_size'
                   ? 'bg-pink-500 text-white border-pink-500 shadow-md shadow-pink-500/20'
                   : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-pink-300'
               }`}
@@ -605,7 +691,7 @@ export const YogaTab: React.FC = () => {
               <span className="text-xs font-extrabold block">🌸 Large / Curvy Bodies</span>
               <span
                 className={`text-[10px] mt-0.5 block ${
-                  bodyType === 'large' ? 'text-pink-100' : 'text-slate-400'
+                  bodyType === 'plus_size' ? 'text-pink-100' : 'text-slate-400'
                 }`}
               >
                 Belly/chest space & joint-friendly room
