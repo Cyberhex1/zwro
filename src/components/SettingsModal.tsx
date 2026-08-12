@@ -1,6 +1,63 @@
 import React, { useState } from 'react';
-import { X, Settings, User, LogIn, LogOut, Volume2, RotateCcw, ShieldAlert, Trash2, Check, Sparkles, RefreshCw, Download, Upload, Database, FileJson, Sun, Moon, AlertTriangle, Copy, Mail, Lock, KeyRound, UserPlus } from 'lucide-react';
-import { UserProfile, AudioType } from '../types';
+import { X, Settings, User, LogIn, LogOut, Volume2, RotateCcw, ShieldAlert, Trash2, Check, Sparkles, RefreshCw, Download, Upload, Database, FileJson, Sun, Moon, AlertTriangle, Copy, Mail, Lock, KeyRound, UserPlus, Sliders, ArrowUp, ArrowDown } from 'lucide-react';
+import { UserProfile, AudioType, ActiveTab } from '../types';
+
+const TAB_LABELS: Record<ActiveTab, string> = {
+  somatic: '🧠 Body First / Somatic Focus',
+  todo: '✅ High-Support Focus Bits',
+  sprint: '⏱️ Sprint Engine Timer',
+  medical: '📋 Low-Adrenaline Shift Logs',
+  office: '🏢 Low-Overhead Virtual Office',
+  shiftLogs: '📜 Historical Shift Logs Archive',
+  workspace: '☁️ Workspace Sync',
+};
+
+const TabOrderCustomizer: React.FC<{
+  tabOrder: ActiveTab[];
+  onUpdateTabOrder: (order: ActiveTab[]) => void;
+}> = ({ tabOrder, onUpdateTabOrder }) => {
+  const moveTab = (index: number, direction: 'up' | 'down') => {
+    const newOrder = [...tabOrder];
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= newOrder.length) return;
+    const temp = newOrder[index];
+    newOrder[index] = newOrder[targetIdx];
+    newOrder[targetIdx] = temp;
+    onUpdateTabOrder(newOrder);
+  };
+
+  return (
+    <div className="space-y-2">
+      {tabOrder.map((tab, idx) => (
+        <div
+          key={tab}
+          className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold"
+        >
+          <span className="text-slate-800 dark:text-slate-200">{TAB_LABELS[tab] || tab}</span>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              disabled={idx === 0}
+              onClick={() => moveTab(idx, 'up')}
+              className="p-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-200 disabled:opacity-30 cursor-pointer"
+            >
+              <ArrowUp className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              disabled={idx === tabOrder.length - 1}
+              onClick={() => moveTab(idx, 'down')}
+              className="p-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-200 disabled:opacity-30 cursor-pointer"
+            >
+              <ArrowDown className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 import { signInWithGoogleWorkspace, logoutGoogleWorkspace, signInWithEmail, signUpWithEmail, sendResetPassword } from '../lib/googleWorkspace';
 import { User as FirebaseUser } from 'firebase/auth';
 
@@ -13,6 +70,7 @@ interface SettingsModalProps {
   googleUser: FirebaseUser | null;
   onDailyReset: () => void;
   onClearAllData: () => void;
+  onResetLevelXP?: () => void;
   onGoogleLogout?: () => void;
 }
 
@@ -25,6 +83,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   googleUser,
   onDailyReset,
   onClearAllData,
+  onResetLevelXP,
   onGoogleLogout,
 }) => {
   const currentProfile = userProfileProp || profileProp || {
@@ -49,6 +108,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [copiedDomain, setCopiedDomain] = useState<boolean>(false);
   const [showConfirmReset, setShowConfirmReset] = useState<boolean>(false);
   const [showConfirmClearAll, setShowConfirmClearAll] = useState<boolean>(false);
+  const [showConfirmResetLevel, setShowConfirmResetLevel] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
   // Email/Password Auth state
@@ -446,7 +506,108 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          {/* Preferences Form */}
+            {/* Appearance & Cute UI / Audio Toggles */}
+            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
+              <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-pink-500" />
+                <span>UI & Cute Sensory Effects Settings</span>
+              </h3>
+
+              <div className="space-y-3">
+                {/* Cute Sound Effects Toggle */}
+                <div className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <div>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block">Cute Sound Effects</span>
+                    <span className="text-[10px] text-slate-400">Chimes, task sparkles, and click sounds</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = currentProfile.cuteSoundEffects === false;
+                      onUpdateProfile({ ...currentProfile, cuteSoundEffects: next });
+                    }}
+                    className={`w-12 h-6 rounded-full p-1 transition-colors cursor-pointer ${
+                      currentProfile.cuteSoundEffects !== false ? 'bg-pink-500' : 'bg-slate-300 dark:bg-slate-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                        currentProfile.cuteSoundEffects !== false ? 'translate-x-6' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Mechanical Keyboard Typing Sounds Toggle */}
+                <div className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <div>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block">Mechanical Keyboard Typing Sounds</span>
+                    <span className="text-[10px] text-slate-400">Subtle tactile clicks when typing in text fields</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = currentProfile.typingSounds === false;
+                      onUpdateProfile({ ...currentProfile, typingSounds: next });
+                    }}
+                    className={`w-12 h-6 rounded-full p-1 transition-colors cursor-pointer ${
+                      currentProfile.typingSounds !== false ? 'bg-pink-500' : 'bg-slate-300 dark:bg-slate-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                        currentProfile.typingSounds !== false ? 'translate-x-6' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Cute UI Effects Toggle */}
+                <div className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <div>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block">Cute UI Effects & Sparkles</span>
+                    <span className="text-[10px] text-slate-400">Soft pastel glows, floaters, and sparkles</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = currentProfile.cuteUiEffects === false;
+                      onUpdateProfile({ ...currentProfile, cuteUiEffects: next });
+                    }}
+                    className={`w-12 h-6 rounded-full p-1 transition-colors cursor-pointer ${
+                      currentProfile.cuteUiEffects !== false ? 'bg-pink-500' : 'bg-slate-300 dark:bg-slate-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                        currentProfile.cuteUiEffects !== false ? 'translate-x-6' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Custom Tab Navigation Order Customizer */}
+            <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-pink-500" />
+                  <span>Customize Main Tab Order</span>
+                </h3>
+                <span className="text-[10px] text-slate-400">Arrange tabs to your preference</span>
+              </div>
+
+              <TabOrderCustomizer
+                tabOrder={currentProfile.tabOrder || ['somatic', 'todo', 'medical', 'office', 'shiftLogs']}
+                onUpdateTabOrder={(newOrder) => {
+                  onUpdateProfile({ ...currentProfile, tabOrder: newOrder });
+                }}
+              />
+            </div>
+
+            {/* Preferences Form */}
+
           <form onSubmit={handleSave} className="space-y-4">
             <div>
               <label className="font-bold text-slate-700 block mb-1">Daily Focus Bits Target</label>
@@ -615,6 +776,59 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               >
                 <RotateCcw className="w-3.5 h-3.5 text-pink-500" />
                 <span>Perform Daily Reset & Archive Log</span>
+              </button>
+            )}
+          </div>
+
+          {/* Reset Career Level & XP Progression */}
+          <div className="bg-amber-50/50 dark:bg-slate-800/60 border border-amber-200 dark:border-amber-900/50 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-amber-600" />
+                <span>Account Reset Career Level & XP</span>
+              </h3>
+              <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">Resets XP to 0</span>
+            </div>
+
+            <p className="text-amber-800 dark:text-amber-300 text-[11px]">
+              Reset your level progression back to Level 1 (NEET) with 0 XP while preserving your tasks, symptom logs, and notes.
+            </p>
+
+            {showConfirmResetLevel ? (
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-amber-300 dark:border-amber-800 space-y-2">
+                <p className="font-bold text-amber-800 dark:text-amber-300">Are you sure you want to reset your level to Level 1 (0 XP)?</p>
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmResetLevel(false)}
+                    className="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold cursor-pointer text-xs"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onResetLevelXP) {
+                        onResetLevelXP();
+                      } else {
+                        onUpdateProfile({ ...currentProfile, xp: 0 });
+                      }
+                      setShowConfirmResetLevel(false);
+                    }}
+                    className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold cursor-pointer text-xs shadow-sm"
+                  >
+                    Yes, Reset Level & XP
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowConfirmResetLevel(true)}
+                className="w-full py-2 bg-amber-100/80 hover:bg-amber-200/80 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 font-bold border border-amber-300 dark:border-amber-800 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer text-xs"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+                <span>Reset Level & XP Progress</span>
               </button>
             )}
           </div>

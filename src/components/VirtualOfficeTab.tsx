@@ -18,8 +18,17 @@ import {
   Bot,
   Copy,
   Check,
+  Bell,
+  Mail,
+  Footprints,
+  Sliders,
+  Play,
+  Square,
+  Printer,
+  FileText,
+  Keyboard,
 } from 'lucide-react';
-import { VirtualCoworker } from '../types';
+import { VirtualCoworker, OfficeAudioType } from '../types';
 import { audioSynth } from '../lib/audioSynth';
 
 const INITIAL_COWORKERS: VirtualCoworker[] = [
@@ -75,22 +84,54 @@ const CORPORATE_REPLIES = [
   "Hey! Everything is on track. I've broken down the remaining tasks into quick micro-steps and expect to wrap up smoothly today.",
 ];
 
+interface OfficeSoundControl {
+  id: OfficeAudioType;
+  name: string;
+  icon: React.ReactNode;
+  type: 'continuous' | 'trigger';
+}
+
+const OFFICE_SOUNDS: OfficeSoundControl[] = [
+  { id: 'hvac', name: 'HVAC Air Hum', icon: <Volume2 className="w-4 h-4 text-slate-500" />, type: 'continuous' },
+  { id: 'keyboard', name: 'Key Clicks', icon: <Keyboard className="w-4 h-4 text-indigo-500" />, type: 'continuous' },
+  { id: 'chatter', name: 'Low Distant Chatter', icon: <Users className="w-4 h-4 text-purple-500" />, type: 'continuous' },
+  { id: 'walking', name: 'Hallway Footsteps', icon: <Footprints className="w-4 h-4 text-amber-600" />, type: 'continuous' },
+  { id: 'pages', name: 'Page Flipping', icon: <FileText className="w-4 h-4 text-emerald-500" />, type: 'continuous' },
+  { id: 'printer', name: 'Printer Printing', icon: <Printer className="w-4 h-4 text-blue-500" />, type: 'continuous' },
+  { id: 'chair', name: 'Desk Chair Creak', icon: <Building2 className="w-4 h-4 text-orange-500" />, type: 'continuous' },
+
+  // Ping triggers
+  { id: 'teams_ping', name: 'Teams Ping', icon: <Bell className="w-4 h-4 text-blue-600" />, type: 'trigger' },
+  { id: 'email_ping', name: 'New Email Ping', icon: <Mail className="w-4 h-4 text-amber-500" />, type: 'trigger' },
+];
+
 export const VirtualOfficeTab: React.FC = () => {
   const [coworkers, setCoworkers] = useState<VirtualCoworker[]>(INITIAL_COWORKERS);
   const [myStatus, setMyStatus] = useState<string>('Deep Focus Bit Mode 🌸');
-  const [officeSoundPlaying, setOfficeSoundPlaying] = useState<boolean>(false);
   const [showDecoyDoc, setShowDecoyDoc] = useState<boolean>(false);
+
+  // Multi-track office audio state
+  const [activeOfficeSounds, setActiveOfficeSounds] = useState<OfficeAudioType[]>(['hvac', 'keyboard']);
+  const [officeVolumes, setOfficeVolumes] = useState<Record<string, number>>({
+    hvac: 0.4,
+    keyboard: 0.3,
+    chatter: 0.2,
+    walking: 0.3,
+    pages: 0.3,
+    printer: 0.3,
+    chair: 0.3,
+  });
 
   // Boss simulator state
   const [bossMsgIndex, setBossMsgIndex] = useState<number>(0);
   const [generatedReply, setGeneratedReply] = useState<string>('');
-  const [copiedReply, setCopiedReply] = useState<boolean>(false);
+  const [copiedReport, setCopiedReport] = useState<boolean>(false);
 
   // Coffee break timer state
-  const [coffeeTimer, setCoffeeTimer] = useState<number>(0); // seconds
+  const [coffeeTimer, setCoffeeTimer] = useState<number>(0);
   const [isCoffeeTimerRunning, setIsCoffeeTimerRunning] = useState<boolean>(false);
 
-  // Simulated live ticker adding background events
+  // Simulated live ticker
   useEffect(() => {
     const interval = setInterval(() => {
       const names = ['Sarah', 'Liam', 'Elena', 'Marcus', 'Jordan', 'Maya'];
@@ -121,7 +162,7 @@ export const VirtualOfficeTab: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Coffee break timer interval
+  // Coffee break timer
   useEffect(() => {
     if (!isCoffeeTimerRunning) return;
     const timer = setInterval(() => {
@@ -137,9 +178,26 @@ export const VirtualOfficeTab: React.FC = () => {
     return () => clearInterval(timer);
   }, [isCoffeeTimerRunning]);
 
-  const toggleOfficeAmbiance = () => {
-    const isPlaying = audioSynth.toggle('office');
-    setOfficeSoundPlaying(isPlaying);
+  const handleToggleSound = (id: OfficeAudioType, type: 'continuous' | 'trigger') => {
+    if (type === 'trigger') {
+      audioSynth.triggerOfficePing(id);
+      return;
+    }
+
+    const isActive = activeOfficeSounds.includes(id);
+    if (isActive) {
+      audioSynth.stopOfficeAudio(id);
+      setActiveOfficeSounds((prev) => prev.filter((s) => s !== id));
+    } else {
+      const vol = officeVolumes[id] ?? 0.3;
+      audioSynth.playOfficeAudio(id, vol);
+      setActiveOfficeSounds((prev) => [...prev, id]);
+    }
+  };
+
+  const handleVolumeChange = (id: OfficeAudioType, vol: number) => {
+    setOfficeVolumes((prev) => ({ ...prev, [id]: vol }));
+    audioSynth.setOfficeAudioVolume(id, vol);
   };
 
   const handleGenerateReply = () => {
@@ -159,10 +217,8 @@ export const VirtualOfficeTab: React.FC = () => {
     setTimeout(() => setCopiedReport(false), 2500);
   };
 
-  const [copiedReport, setCopiedReport] = useState<boolean>(false);
-
   const startCoffeeBreak = () => {
-    setCoffeeTimer(180); // 3 minutes
+    setCoffeeTimer(180);
     setIsCoffeeTimerRunning(true);
     audioSynth.playChime();
   };
@@ -176,14 +232,14 @@ export const VirtualOfficeTab: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div>
-          <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <Building2 className="w-5 h-5 text-pink-500" />
             <span>Virtual Office Simulator ("Pretend Office")</span>
           </h3>
-          <p className="text-xs text-slate-500">
-            A psychological co-working shelter with office soundscapes, team ticker, boss simulator, and decoy corporate shield.
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            A psychological co-working shelter with multi-track office soundscapes, team ticker, boss simulator, and decoy corporate shield.
           </p>
         </div>
 
@@ -192,7 +248,7 @@ export const VirtualOfficeTab: React.FC = () => {
           className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
             showDecoyDoc
               ? 'bg-emerald-500 text-white'
-              : 'bg-slate-800 hover:bg-slate-900 text-white'
+              : 'bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white'
           }`}
         >
           <EyeOff className="w-3.5 h-3.5" />
@@ -200,7 +256,7 @@ export const VirtualOfficeTab: React.FC = () => {
         </button>
       </div>
 
-      {/* Decoy Interactive Corporate Spec Document Simulator */}
+      {/* Decoy Document Simulator */}
       {showDecoyDoc ? (
         <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 text-slate-100 space-y-4 shadow-2xl animate-fadeIn font-mono text-xs">
           <div className="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -243,48 +299,32 @@ export const VirtualOfficeTab: React.FC = () => {
                   <td className="p-2 border border-slate-800">100.0%</td>
                   <td className="p-2 border border-slate-800">CRITICAL</td>
                 </tr>
-                <tr className="border border-slate-800">
-                  <td className="p-2 border border-slate-800">#FOCUS-803</td>
-                  <td className="p-2 border border-slate-800">Somatic Reliability Testing</td>
-                  <td className="p-2 border border-slate-800 text-amber-400">STANDBY</td>
-                  <td className="p-2 border border-slate-800">64.0%</td>
-                  <td className="p-2 border border-slate-800">MEDIUM</td>
-                </tr>
               </tbody>
             </table>
-          </div>
-
-          <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700 space-y-1">
-            <p className="text-[11px] text-slate-300 font-bold">Executive Summary Notes:</p>
-            <p className="text-[11px] text-slate-400 font-sans">
-              "All Q3 metrics demonstrate steady progress with low error rates. Operational efficiency remains within optimal parameters."
-            </p>
           </div>
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Top Office Status Bar & Boss Shield */}
+          {/* Status & Shield */}
           <div className="grid md:grid-cols-2 gap-4">
-            {/* Boss Shield Indicator */}
-            <div className="bg-pink-50/60 border border-pink-100 rounded-2xl p-4 flex items-center justify-between gap-3">
+            <div className="bg-pink-50/60 dark:bg-slate-800/60 border border-pink-100 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-pink-100 text-pink-600">
+                <div className="p-2.5 rounded-xl bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-800">Manager & Deadline Shield</h4>
-                  <p className="text-[11px] text-pink-700 font-medium">
-                    Status: <span className="font-bold">Out of Office / All Deadlines Satisfied</span>
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">Manager & Deadline Shield</h4>
+                  <p className="text-[11px] text-pink-700 dark:text-pink-300 font-medium">
+                    Status: <span className="font-bold">Out of Office / Deadlines Met</span>
                   </p>
                 </div>
               </div>
-              <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+              <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                 100% SECURE
               </span>
             </div>
 
-            {/* Slack-style Status Builder */}
-            <div className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
+            <div className="bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
               <div className="flex items-center gap-2.5">
                 <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                 <div>
@@ -293,7 +333,7 @@ export const VirtualOfficeTab: React.FC = () => {
                     type="text"
                     value={myStatus}
                     onChange={(e) => setMyStatus(e.target.value)}
-                    className="text-xs font-bold text-slate-800 bg-transparent focus:outline-none focus:border-b focus:border-pink-500 w-48"
+                    className="text-xs font-bold text-slate-800 dark:text-slate-100 bg-transparent focus:outline-none focus:border-b focus:border-pink-500 w-48"
                   />
                 </div>
               </div>
@@ -301,37 +341,92 @@ export const VirtualOfficeTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Sound Ambiance Generator */}
-          <div className="bg-white border border-pink-100 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-pink-100 text-pink-600">
-                <Volume2 className="w-5 h-5" />
+          {/* Multi-Track Pretend Office Sound Mixer */}
+          <div className="bg-white dark:bg-slate-800/60 border border-pink-100 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300">
+                  <Sliders className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">Multi-Track Office Sound Generator & Pings</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Customize individual sound levels (keyboard, HVAC, chatter, chair, footsteps, printer, pages) or trigger Teams & Email pings!
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-800">Office Desk & Typing Sound Ambiance</h4>
-                <p className="text-[11px] text-slate-500">
-                  Soft HVAC hum, subtle mechanical keyboard clicking, and distant office chatter.
-                </p>
-              </div>
+              <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-pink-50 dark:bg-pink-950/50 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800">
+                {activeOfficeSounds.length} Sounds Active
+              </span>
             </div>
 
-            <button
-              onClick={toggleOfficeAmbiance}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md ${
-                officeSoundPlaying
-                  ? 'bg-pink-500 text-white shadow-pink-500/20'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              <Activity className={`w-4 h-4 ${officeSoundPlaying ? 'animate-spin' : ''}`} />
-              <span>{officeSoundPlaying ? 'Pause Office Audio' : 'Play Office Audio'}</span>
-            </button>
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
+              {OFFICE_SOUNDS.map((snd) => {
+                const isActive = activeOfficeSounds.includes(snd.id);
+                const vol = officeVolumes[snd.id] ?? 0.3;
+
+                return (
+                  <div
+                    key={snd.id}
+                    className={`p-3 rounded-2xl border transition-all ${
+                      isActive
+                        ? 'bg-pink-50/80 dark:bg-pink-950/30 border-pink-300 dark:border-pink-800'
+                        : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-white dark:bg-slate-700 shadow-xs">{snd.icon}</div>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{snd.name}</span>
+                      </div>
+
+                      <button
+                        onClick={() => handleToggleSound(snd.id, snd.type)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-all ${
+                          snd.type === 'trigger'
+                            ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-xs'
+                            : isActive
+                            ? 'bg-pink-500 text-white'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {snd.type === 'trigger' ? (
+                          'Ping!'
+                        ) : isActive ? (
+                          <Square className="w-3 h-3" />
+                        ) : (
+                          <Play className="w-3 h-3" />
+                        )}
+                      </button>
+                    </div>
+
+                    {snd.type === 'continuous' && isActive && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <Volume2 className="w-3 h-3 text-pink-500 shrink-0" />
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value={vol}
+                          onChange={(e) => handleVolumeChange(snd.id, parseFloat(e.target.value))}
+                          className="w-full accent-pink-500 h-1.5 bg-pink-200 dark:bg-pink-900 rounded-lg cursor-pointer"
+                        />
+                        <span className="text-[10px] font-mono font-bold text-pink-600 dark:text-pink-400 w-7 text-right">
+                          {Math.round(vol * 100)}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Boss Simulator & Confident Response Generator */}
-          <div className="bg-white border border-pink-100 rounded-2xl p-5 space-y-4 shadow-sm">
+          {/* Boss Simulator */}
+          <div className="bg-white dark:bg-slate-800/60 border border-pink-100 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <Bot className="w-4 h-4 text-pink-500" />
                 <span>Manager Check-In & Corporate Reply Generator</span>
               </h4>
@@ -344,39 +439,37 @@ export const VirtualOfficeTab: React.FC = () => {
               </button>
             </div>
 
-            {/* Simulated Slack Message from Boss */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs shrink-0">
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold text-xs shrink-0">
                 👨‍💼
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-xs text-slate-800">Alex (Manager)</span>
+                  <span className="font-bold text-xs text-slate-800 dark:text-slate-100">Alex (Manager)</span>
                   <span className="text-[10px] text-slate-400">10:14 AM</span>
                 </div>
-                <p className="text-xs text-slate-700 italic">"{BOSS_PROMPTS[bossMsgIndex]}"</p>
+                <p className="text-xs text-slate-700 dark:text-slate-300 italic">"{BOSS_PROMPTS[bossMsgIndex]}"</p>
               </div>
             </div>
 
-            {/* Generated Confident Response */}
             {generatedReply ? (
-              <div className="p-3.5 rounded-2xl bg-pink-50 border border-pink-200 space-y-2 animate-fadeIn">
+              <div className="p-3.5 rounded-2xl bg-pink-50 dark:bg-pink-950/40 border border-pink-200 dark:border-pink-900 space-y-2 animate-fadeIn">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-pink-700 uppercase">Suggested Professional Reply:</span>
+                  <span className="text-[10px] font-bold text-pink-700 dark:text-pink-300 uppercase">Suggested Professional Reply:</span>
                   <button
                     onClick={handleCopyReply}
-                    className="px-2.5 py-1 bg-white border border-pink-200 hover:bg-pink-100 text-pink-700 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                    className="px-2.5 py-1 bg-white dark:bg-slate-800 border border-pink-200 dark:border-pink-800 text-pink-700 dark:text-pink-300 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer"
                   >
                     {copiedReport ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-pink-500" />}
                     <span>{copiedReport ? 'Copied!' : 'Copy Reply'}</span>
                   </button>
                 </div>
-                <p className="text-xs text-slate-800 font-medium">"{generatedReply}"</p>
+                <p className="text-xs text-slate-800 dark:text-slate-200 font-medium">"{generatedReply}"</p>
               </div>
             ) : (
               <button
                 onClick={handleGenerateReply}
-                className="w-full py-2 bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold border border-pink-200 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                className="w-full py-2 bg-pink-50 hover:bg-pink-100 dark:bg-pink-950/40 dark:hover:bg-pink-900/40 text-pink-700 dark:text-pink-300 font-bold border border-pink-200 dark:border-pink-900 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5 text-pink-500" />
                 <span>Generate Confident Corporate Response</span>
@@ -384,10 +477,10 @@ export const VirtualOfficeTab: React.FC = () => {
             )}
           </div>
 
-          {/* Virtual Coworker Activity Feed */}
+          {/* Virtual Coworker Presence Feed */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <Users className="w-4 h-4 text-pink-500" />
                 <span>Virtual Coworker Presence Feed</span>
               </h4>
@@ -398,20 +491,20 @@ export const VirtualOfficeTab: React.FC = () => {
               {coworkers.map((cw) => (
                 <div
                   key={cw.id}
-                  className="bg-white border border-slate-100 hover:border-pink-100 rounded-2xl p-4 shadow-sm flex items-start gap-3 transition-all"
+                  className="bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 hover:border-pink-100 rounded-2xl p-4 shadow-sm flex items-start gap-3 transition-all"
                 >
-                  <div className="w-10 h-10 rounded-2xl bg-pink-50 border border-pink-100 flex items-center justify-center text-xl shrink-0">
+                  <div className="w-10 h-10 rounded-2xl bg-pink-50 dark:bg-pink-950/50 border border-pink-100 dark:border-pink-900 flex items-center justify-center text-xl shrink-0">
                     {cw.avatar}
                   </div>
 
                   <div className="space-y-0.5 overflow-hidden flex-1">
                     <div className="flex items-center justify-between gap-1">
-                      <h5 className="text-xs font-bold text-slate-800 truncate">{cw.name}</h5>
+                      <h5 className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{cw.name}</h5>
                       <span className="text-[10px] text-slate-400 font-mono shrink-0">{cw.timeAgo}</span>
                     </div>
                     <p className="text-[10px] text-slate-400 font-medium">{cw.role}</p>
-                    <p className="text-xs text-slate-600 font-medium pt-1">
-                      <span className="text-pink-600 font-bold">Focus:</span> {cw.currentFocus}
+                    <p className="text-xs text-slate-600 dark:text-slate-300 font-medium pt-1">
+                      <span className="text-pink-600 dark:text-pink-400 font-bold">Focus:</span> {cw.currentFocus}
                     </p>
                   </div>
                 </div>
@@ -419,20 +512,20 @@ export const VirtualOfficeTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Virtual Watercooler / Tea Break Timer */}
-          <div className="p-4 rounded-2xl bg-pink-50 border border-pink-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Virtual Watercooler */}
+          <div className="p-4 rounded-2xl bg-pink-50 dark:bg-slate-800/80 border border-pink-100 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Coffee className="w-5 h-5 text-pink-500 shrink-0" />
               <div>
-                <h5 className="text-xs font-bold text-slate-800">Virtual Watercooler & Coffee Break</h5>
-                <p className="text-[11px] text-slate-500">
+                <h5 className="text-xs font-bold text-slate-800 dark:text-slate-100">Virtual Watercooler & Coffee Break</h5>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Step away to grab water, tea, or stretch for 3 minutes. Your desk is completely safe.
                 </p>
               </div>
             </div>
 
             {isCoffeeTimerRunning ? (
-              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-pink-200 font-mono font-black text-pink-600 text-sm">
+              <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-xl border border-pink-200 dark:border-pink-900 font-mono font-black text-pink-600 dark:text-pink-400 text-sm">
                 <Clock className="w-4 h-4 text-pink-500 animate-spin" />
                 <span>{formatCoffeeTime(coffeeTimer)}</span>
               </div>

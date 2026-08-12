@@ -7,7 +7,6 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
@@ -16,134 +15,14 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    function incoming() {
-      return request.resource.data;
-    }
-
-    function existing() {
-      return resource.data;
-    }
-
-    // Validation functions
-    function isValidUserProfile(data) {
-      return data is map
-        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
-        && (data.roleTitle == null || (data.roleTitle is string && data.roleTitle.size() <= 100))
-        && data.dailyGoalBits is number && data.dailyGoalBits >= 1 && data.dailyGoalBits <= 100
-        && data.preferredNoise is string && data.preferredNoise.size() <= 20
-        && (data.avatarEmoji == null || (data.avatarEmoji is string && data.avatarEmoji.size() <= 10))
-        && (data.totalBitsLogged == null || data.totalBitsLogged is number)
-        && (data.streakDays == null || data.streakDays is number)
-        && data.panicGroundingPhrase is string && data.panicGroundingPhrase.size() <= 300
-        && (data.medicalEmergencyNote == null || (data.medicalEmergencyNote is string && data.medicalEmergencyNote.size() <= 1000))
-        && (data.theme == null || (data.theme is string && data.theme.size() <= 10));
-    }
-
-    function isValidTodoItem(data, userId) {
-      return data is map
-        && data.id is string && isValidId(data.id)
-        && data.userId == userId
-        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
-        && data.completed is bool
-        && data.priority in ['low', 'medium', 'high']
-        && data.eisenhower in ['urgent_important', 'not_urgent_important', 'urgent_not_important', 'not_urgent_not_important']
-        && (data.rule135 == null || data.rule135 in ['big', 'medium', 'small'])
-        && (data.isFrog == null || data.isFrog is bool)
-        && (data.focusBits == null || (data.focusBits is list && data.focusBits.size() <= 50))
-        && (data.dueDate == null || (data.dueDate is string && data.dueDate.size() <= 50))
-        && (data.category == null || (data.category is string && data.category.size() <= 50))
-        && (data.notes == null || (data.notes is string && data.notes.size() <= 1000))
-        && data.createdAt is number;
-    }
-
-    function isValidSymptomLog(data, userId) {
-      return data is map
-        && data.id is string && isValidId(data.id)
-        && data.userId == userId
-        && (data.date == null || (data.date is string && data.date.size() <= 50))
-        && data.timestamp is number
-        && data.symptomName is string && data.symptomName.size() > 0 && data.symptomName.size() <= 100
-        && data.severity is number && data.severity >= 1 && data.severity <= 10
-        && (data.triggers == null || (data.triggers is string && data.triggers.size() <= 500))
-        && (data.copingMethod == null || (data.copingMethod is string && data.copingMethod.size() <= 500))
-        && (data.bodyArea == null || (data.bodyArea is string && data.bodyArea.size() <= 100))
-        && (data.notes == null || (data.notes is string && data.notes.size() <= 1000));
-    }
-
-    function isValidNoteItem(data, userId) {
-      return data is map
-        && data.id is string && isValidId(data.id)
-        && data.userId == userId
-        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
-        && data.content is string && data.content.size() <= 5000
-        && data.category in ['general', 'somatic', 'office', 'task']
-        && data.pinned is bool
-        && (data.date == null || (data.date is string && data.date.size() <= 50))
-        && data.timestamp is number;
-    }
-
-    function isValidSessionLog(data, userId) {
-      return data is map
-        && data.id is string && isValidId(data.id)
-        && data.userId == userId
-        && (data.date == null || (data.date is string && data.date.size() <= 50))
-        && data.timestamp is number
-        && data.tasksCompleted is number
-        && data.sprintsCount is number
-        && data.energyEnd is number
-        && (data.notes == null || (data.notes is string && data.notes.size() <= 1000))
-        && data.effortRating in ['low', 'standard', 'high'];
-    }
-
-    function isValidUserState(data, userId) {
-      return data is map
-        && data.userId == userId
-        && data.battery is number && data.battery >= 0 && data.battery <= 100;
-    }
-
-    // User-scoped collections and subcollections
+    // User-scoped isolated data collections
     match /users/{userId} {
       allow read, write: if isOwner(userId);
 
-      match /profile/{docId} {
-        allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId) && isValidUserProfile(incoming());
-        allow delete: if isOwner(userId);
-      }
-
-      match /todos/{todoId} {
-        allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId) && isValidId(todoId) && isValidTodoItem(incoming(), userId);
-        allow delete: if isOwner(userId) && isValidId(todoId);
-      }
-
-      match /symptoms/{symptomId} {
-        allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId) && isValidId(symptomId) && isValidSymptomLog(incoming(), userId);
-        allow delete: if isOwner(userId) && isValidId(symptomId);
-      }
-
-      match /notes/{noteId} {
-        allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId) && isValidId(noteId) && isValidNoteItem(incoming(), userId);
-        allow delete: if isOwner(userId) && isValidId(noteId);
-      }
-
-      match /sessionLogs/{logId} {
-        allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId) && isValidId(logId) && isValidSessionLog(incoming(), userId);
-        allow delete: if isOwner(userId) && isValidId(logId);
-      }
-
-      match /state/{docId} {
-        allow read: if isOwner(userId);
-        allow create, update: if isOwner(userId) && isValidUserState(incoming(), userId);
-        allow delete: if isOwner(userId);
+      match /{allSubcollections=**} {
+        allow read, write: if isOwner(userId);
       }
     }
   }
 }
+

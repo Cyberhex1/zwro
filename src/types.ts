@@ -1,4 +1,38 @@
-export type AudioType = 'brown' | 'pink' | 'white' | 'rain' | 'binaural' | 'drone' | 'office' | 'cafe';
+export type ActiveTab = 'somatic' | 'todo' | 'sprint' | 'medical' | 'office' | 'shiftLogs' | 'workspace';
+
+export type AudioType =
+  | 'brown'
+  | 'pink'
+  | 'white'
+  | 'rain'
+  | 'binaural'
+  | 'drone'
+  | 'office'
+  | 'cafe'
+  | 'keyboard'
+  | 'coffee'
+  | 'medieval'
+  | 'lofi'
+  | 'cute_hyper'
+  | 'cute_chill'
+  | 'asmr_tapping'
+  | 'asmr_rustle'
+  | 'asmr_scratch'
+  | 'park'
+  | 'island_breeze';
+
+export type OfficeAudioType =
+  | 'teams_ping'
+  | 'email_ping'
+  | 'walking'
+  | 'chair'
+  | 'hvac'
+  | 'keyboard'
+  | 'office_keyboard'
+  | 'chatter'
+  | 'pages'
+  | 'page_flip'
+  | 'printer';
 
 export interface FocusBit {
   id: string;
@@ -76,6 +110,19 @@ export interface UserProfile {
   panicGroundingPhrase: string;
   medicalEmergencyNote?: string;
   theme?: 'light' | 'dark';
+  // Gamified progression & features
+  xp?: number;
+  level?: number;
+  levelTitle?: string;
+  levelEmoji?: string;
+  tabOrder?: string[];
+  cuteSoundEffects?: boolean;
+  cuteUiEffects?: boolean;
+  typingSounds?: boolean;
+  mixerVolumes?: Record<string, number>;
+  activeSoundscapes?: string[];
+  officeVolumes?: Record<string, number>;
+  activeOfficeAudio?: string[];
 }
 
 export interface VirtualCoworker {
@@ -115,3 +162,4 @@ export interface BurnoutPhaseInfo {
   description: string;
   rules: string[];
 }
+

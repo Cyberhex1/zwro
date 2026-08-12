@@ -298,3 +298,29 @@ export function subscribeUserStateFromFirestore(userId: string, onUpdate: (batte
     }
   );
 }
+
+// Manual Sync All Helper
+export async function syncAllWithFirestore(
+  userId: string,
+  profile: UserProfile,
+  todos: TodoItem[],
+  symptomLogs: SymptomLog[],
+  notes: NoteItem[],
+  sessionLogs: SessionLog[],
+  battery: number
+) {
+  await saveUserProfileToFirestore(userId, profile);
+  await saveUserStateToFirestore(userId, battery);
+  for (const todo of todos) {
+    await saveTodoToFirestore(userId, todo);
+  }
+  for (const symptom of symptomLogs) {
+    await saveSymptomToFirestore(userId, symptom);
+  }
+  for (const note of notes) {
+    await saveNoteToFirestore(userId, note);
+  }
+  for (const log of sessionLogs) {
+    await saveSessionLogToFirestore(userId, log);
+  }
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, ListTodo, Timer, Activity, Building2, Layers, Sparkles } from 'lucide-react';
+import { Heart, ListTodo, Timer, Activity, Building2, Layers, Sparkles, Sliders } from 'lucide-react';
 import { Header } from './components/Header';
 import { SomaticMindsetTab } from './components/SomaticMindsetTab';
 import { TodoFocusBitsTab } from './components/TodoFocusBitsTab';
@@ -12,8 +12,12 @@ import { SessionLogsModal } from './components/SessionLogsModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { NotesDrawer } from './components/NotesDrawer';
 import { SettingsModal } from './components/SettingsModal';
-import { SessionLog, TodoItem, SymptomLog, UserProfile, NoteItem } from './types';
+import { SoundscapeMixerModal } from './components/SoundscapeMixerModal';
+import { AnalyticsModal } from './components/AnalyticsModal';
+import { TypingSoundEngine } from './components/TypingSoundEngine';
+import { SessionLog, TodoItem, SymptomLog, UserProfile, NoteItem, ActiveTab } from './types';
 import { initWorkspaceAuth, logoutGoogleWorkspace } from './lib/googleWorkspace';
+import { audioSynth } from './lib/audioSynth';
 import { User } from 'firebase/auth';
 import {
   saveUserProfileToFirestore,
@@ -31,6 +35,7 @@ import {
   subscribeSessionLogsFromFirestore,
   saveUserStateToFirestore,
   subscribeUserStateFromFirestore,
+  syncAllWithFirestore,
 } from './lib/firebase';
 
 const DEFAULT_PROFILE: UserProfile = {
@@ -43,6 +48,12 @@ const DEFAULT_PROFILE: UserProfile = {
   streakDays: 4,
   panicGroundingPhrase: 'I am completely safe. 1 Focus Bit is enough for today.',
   theme: 'light',
+  xp: 150,
+  cuteSoundEffects: true,
+  cuteUiEffects: true,
+  tabOrder: ['somatic', 'todo', 'medical', 'office', 'shiftLogs'],
+  activeSoundscapes: ['brown'],
+  mixerVolumes: { brown: 0.5 },
 };
 
 const DEFAULT_TODOS: TodoItem[] = [
@@ -108,7 +119,6 @@ const DEFAULT_NOTES: NoteItem[] = [
   },
 ];
 
-// Helper to get key for current 2am reset cycle
 const get2amCycleKey = (d: Date = new Date()): string => {
   const dateCopy = new Date(d);
   if (dateCopy.getHours() < 2) {
@@ -121,7 +131,7 @@ const get2amCycleKey = (d: Date = new Date()): string => {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'somatic' | 'todo' | 'sprint' | 'medical' | 'office' | 'workspace'>('somatic');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('somatic');
 
   const [battery, setBattery] = useState<number>(() => {
     const saved = localStorage.getItem('zawe_battery');
@@ -130,7 +140,7 @@ export default function App() {
 
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('zawe_profile');
-    return saved ? JSON.parse(saved) : DEFAULT_PROFILE;
+    return saved ? { ...DEFAULT_PROFILE, ...JSON.parse(saved) } : DEFAULT_PROFILE;
   });
 
   const [todos, setTodos] = useState<TodoItem[]>(() => {
@@ -161,6 +171,8 @@ export default function App() {
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const [isNotesOpen, setIsNotesOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isMixerOpen, setIsMixerOpen] = useState<boolean>(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Initialize Auth state listener
@@ -180,7 +192,7 @@ export default function App() {
     let isProfileInitial = true;
     const unsubProfile = subscribeUserProfileFromFirestore(uid, (profile) => {
       if (profile) {
-        setUserProfile(profile);
+        setUserProfile((prev) => ({ ...prev, ...profile }));
       } else if (isProfileInitial) {
         saveUserProfileToFirestore(uid, userProfile);
       }
@@ -289,11 +301,34 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  const addXp = (amount: number = 25) => {
+    setUserProfile((prev) => {
+      const nextXp = (prev.xp || 0) + amount;
+      const updated = { ...prev, xp: nextXp };
+      if (googleUser) {
+        saveUserProfileToFirestore(googleUser.uid, updated);
+      }
+      return updated;
+    });
+    if (userProfile.cuteSoundEffects !== false) {
+      audioSynth.playChime();
+    }
+  };
+
   const handleUpdateProfile = (updated: UserProfile) => {
     setUserProfile(updated);
     if (googleUser) {
       saveUserProfileToFirestore(googleUser.uid, updated);
     }
+  };
+
+  const handleManualSync = async () => {
+    if (!googleUser) {
+      triggerToast('Cloud sync requires logging in with an account');
+      return;
+    }
+    await syncAllWithFirestore(googleUser.uid, userProfile, todos, symptomLogs, notes, sessionLogs, battery);
+    triggerToast('☁️ Manual Cloud Sync Complete!');
   };
 
   const handleDrainBattery = (amount: number) => {
@@ -321,6 +356,7 @@ export default function App() {
   };
 
   const handleLogTask = () => {
+    addXp(25);
     setUserProfile((prev) => {
       const next = {
         ...prev,
@@ -331,7 +367,7 @@ export default function App() {
       }
       return next;
     });
-    triggerToast('✨ 1 Focus Bit Logged!');
+    triggerToast('✨ 1 Focus Bit Logged (+25 XP)!');
   };
 
   // Daily Reset & Log Archiving Logic
@@ -347,7 +383,6 @@ export default function App() {
     const currentCycle = get2amCycleKey();
     localStorage.setItem('zawe_last_reset_cycle', currentCycle);
 
-    // Create archived summary log entry
     const archivedLog: SessionLog = {
       id: Date.now().toString(),
       date: dateStr,
@@ -364,7 +399,6 @@ export default function App() {
       saveSessionLogToFirestore(googleUser.uid, archivedLog);
     }
 
-    // Reset daily completed todos and battery
     setTodos((prev) => {
       const updated = prev.map((t) => ({
         ...t,
@@ -385,7 +419,6 @@ export default function App() {
     );
   };
 
-  // Automatic 2 AM Daily Reset Checker
   useEffect(() => {
     const check2amReset = () => {
       const lastResetCycle = localStorage.getItem('zawe_last_reset_cycle');
@@ -414,7 +447,6 @@ export default function App() {
     triggerToast('🧹 All stored application data cleared!');
   };
 
-  // Todo Handler functions
   const handleAddTodo = (newTodoData: Omit<TodoItem, 'id' | 'createdAt' | 'focusBits'>) => {
     const newTodo: TodoItem = {
       ...newTodoData,
@@ -433,7 +465,9 @@ export default function App() {
     setTodos((prev) =>
       prev.map((t) => {
         if (t.id === id) {
-          const updated = { ...t, completed: !t.completed };
+          const isCompleting = !t.completed;
+          const updated = { ...t, completed: isCompleting };
+          if (isCompleting) addXp(50);
           if (googleUser) {
             saveTodoToFirestore(googleUser.uid, updated);
           }
@@ -500,7 +534,6 @@ export default function App() {
     triggerToast(`Sent "${taskTitle}" to Sprint Timer!`);
   };
 
-  // Symptom log handlers
   const handleAddSymptomLog = (logData: Omit<SymptomLog, 'id' | 'timestamp' | 'date'>) => {
     const newLog: SymptomLog = {
       ...logData,
@@ -528,7 +561,6 @@ export default function App() {
     }
   };
 
-  // Notes handlers
   const handleAddNote = (noteData: Omit<NoteItem, 'id' | 'timestamp' | 'date'>) => {
     const newNote: NoteItem = {
       ...noteData,
@@ -580,8 +612,27 @@ export default function App() {
     setActiveTab('todo');
   };
 
+  const handleResetLevelXP = () => {
+    handleUpdateProfile({ ...userProfile, xp: 0 });
+    triggerToast('Account Level & XP reset to Level 1 (NEET)!');
+  };
+
+  // Tab Order definitions
+  const customTabOrder = userProfile.tabOrder || ['somatic', 'todo', 'medical', 'office', 'shiftLogs'];
+
+  const tabDefs: Record<ActiveTab, { label: string; icon: React.ReactNode }> = {
+    somatic: { label: '1. Somatic & Mindset', icon: <Heart className="w-4 h-4" /> },
+    todo: { label: '2. To-Do & Focus Bits', icon: <ListTodo className="w-4 h-4" /> },
+    sprint: { label: '3. Sprint Engine', icon: <Timer className="w-4 h-4" /> },
+    medical: { label: '4. Medical Symptoms', icon: <Activity className="w-4 h-4" /> },
+    office: { label: '5. Pretend Office', icon: <Building2 className="w-4 h-4" /> },
+    shiftLogs: { label: '6. Shift Logs', icon: <Layers className="w-4 h-4" /> },
+    workspace: { label: '7. Workspace Sync', icon: <Layers className="w-4 h-4" /> },
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 p-4 md:p-6 lg:p-8 flex justify-center font-sans antialiased selection:bg-pink-500/20">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50/70 via-slate-50 to-purple-50/50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 text-slate-800 dark:text-slate-100 p-4 md:p-6 lg:p-8 flex justify-center font-sans antialiased selection:bg-pink-500/20">
+      <TypingSoundEngine enabled={userProfile.typingSounds !== false} />
       <div className="max-w-4xl w-full space-y-6">
         {/* Header */}
         <Header
@@ -598,83 +649,42 @@ export default function App() {
           onUpdateProfile={handleUpdateProfile}
         />
 
-        {/* Primary Tab Navigation */}
-        <nav className="flex gap-2 overflow-x-auto pb-2.5 tab-scrollbar">
-          <button
-            onClick={() => setActiveTab('somatic')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'somatic'
-                ? 'bg-pink-500 text-white shadow-md shadow-pink-500/20'
-                : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100 hover:text-slate-800'
-            }`}
-          >
-            <Heart className="w-4 h-4" />
-            <span>1. Somatic & Mindset</span>
-          </button>
+        {/* Primary Tab Navigation Bar with Thin Scrollbar */}
+        <div className="relative group">
+          <nav className="flex gap-2 overflow-x-auto pb-2.5 scrollbar-thin scrollbar-thumb-pink-300 dark:scrollbar-thumb-slate-700 hover:scrollbar-thumb-pink-500 transition-all">
+            {customTabOrder.map((tabKey) => {
+              const def = tabDefs[tabKey];
+              if (!def) return null;
 
-          <button
-            onClick={() => setActiveTab('todo')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'todo'
-                ? 'bg-pink-500 text-white shadow-md shadow-pink-500/20'
-                : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100 hover:text-slate-800'
-            }`}
-          >
-            <ListTodo className="w-4 h-4" />
-            <span>2. To-Do & Focus Bits</span>
-          </button>
+              return (
+                <button
+                  key={tabKey}
+                  onClick={() => setActiveTab(tabKey)}
+                  className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+                    activeTab === tabKey
+                      ? 'bg-pink-500 text-white shadow-md shadow-pink-500/20'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {def.icon}
+                  <span>{def.label}</span>
+                </button>
+              );
+            })}
 
-          <button
-            onClick={() => setActiveTab('sprint')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'sprint'
-                ? 'bg-pink-500 text-white shadow-md shadow-pink-500/20'
-                : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100 hover:text-slate-800'
-            }`}
-          >
-            <Timer className="w-4 h-4" />
-            <span>3. Sprint Engine</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('medical')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'medical'
-                ? 'bg-pink-500 text-white shadow-md shadow-pink-500/20'
-                : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100 hover:text-slate-800'
-            }`}
-          >
-            <Activity className="w-4 h-4" />
-            <span>4. Medical Symptoms</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('office')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'office'
-                ? 'bg-pink-500 text-white shadow-md shadow-pink-500/20'
-                : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100 hover:text-slate-800'
-            }`}
-          >
-            <Building2 className="w-4 h-4" />
-            <span>5. Pretend Office</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('workspace')}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'workspace'
-                ? 'bg-pink-500 text-white shadow-md shadow-pink-500/20'
-                : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100 hover:text-slate-800'
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            <span>6. Workspace Sync</span>
-          </button>
-        </nav>
+            {/* Always include Soundscape Studio Mixer Button */}
+            <button
+              onClick={() => setIsMixerOpen(true)}
+              className="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer shrink-0 bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-purple-500/20 hover:opacity-95"
+            >
+              <Sliders className="w-4 h-4" />
+              <span>Multi-Track Soundscape Mixer</span>
+            </button>
+          </nav>
+        </div>
 
         {/* View Panels */}
-        <main className="bg-white/90 border border-pink-200/90 backdrop-blur-xl rounded-3xl p-6 md:p-8 shadow-2xl shadow-pink-500/5">
+        <main className="bg-white/90 dark:bg-slate-900/90 border border-pink-200/90 dark:border-slate-800 backdrop-blur-xl rounded-3xl p-6 md:p-8 shadow-2xl shadow-pink-500/5">
           {activeTab === 'somatic' && (
             <SomaticMindsetTab
               onCompleteUnfreeze={() => setActiveTab('todo')}
@@ -712,7 +722,7 @@ export default function App() {
 
           {activeTab === 'office' && <VirtualOfficeTab />}
 
-          {activeTab === 'workspace' && (
+          {activeTab === 'shiftLogs' && (
             <GoogleWorkspacePanel
               onImportTaskToMicroBar={handleImportTaskToMicroBar}
               sessionLogs={sessionLogs}
@@ -728,7 +738,7 @@ export default function App() {
           </div>
         )}
 
-        {/* Overlays / Modals */}
+        {/* Overlays & Modals */}
         <PanicOverlay
           isOpen={isPanicOpen}
           onClose={() => setIsPanicOpen(false)}
@@ -752,6 +762,25 @@ export default function App() {
             triggerToast('Updated profile preferences!');
           }}
           totalFocusBitsLogged={userProfile.totalBitsLogged}
+          onOpenAnalytics={() => setIsAnalyticsOpen(true)}
+          onManualSync={handleManualSync}
+          onResetLevelXP={handleResetLevelXP}
+        />
+
+        <SoundscapeMixerModal
+          isOpen={isMixerOpen}
+          onClose={() => setIsMixerOpen(false)}
+          userProfile={userProfile}
+          onUpdateProfile={handleUpdateProfile}
+        />
+
+        <AnalyticsModal
+          isOpen={isAnalyticsOpen}
+          onClose={() => setIsAnalyticsOpen(false)}
+          userProfile={userProfile}
+          symptomLogs={symptomLogs}
+          sessionLogs={sessionLogs}
+          todos={todos}
         />
 
         <NotesDrawer
@@ -774,6 +803,7 @@ export default function App() {
           }}
           onDailyReset={handleDailyReset}
           onClearAllData={handleClearAllData}
+          onResetLevelXP={handleResetLevelXP}
           googleUser={googleUser}
           onGoogleLogout={async () => {
             await logoutGoogleWorkspace();
