@@ -17,11 +17,35 @@ class MultiTrackSynthesizer {
   constructor() {
     if (typeof window !== 'undefined') {
       const unlockAudio = () => {
-        this.initCtx();
-        if (this.ctx && this.ctx.state === 'suspended') {
-          this.ctx.resume().then(() => {
+        try {
+          if (!this.ctx) {
+            const AudioContextClass =
+              window.AudioContext ||
+              (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+            if (AudioContextClass) {
+              this.ctx = new AudioContextClass();
+            }
+          }
+          
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+          }
+
+          if (this.ctx && !this.isUnlocked) {
+            // Play silent buffer to unlock iOS/Safari and strict iframes
+            const buffer = this.ctx.createBuffer(1, 1, 22050);
+            const source = this.ctx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(this.ctx.destination);
+            source.start(0);
+            
             this.isUnlocked = true;
-          }).catch(() => {});
+            ['click', 'touchstart', 'keydown', 'pointerdown'].forEach((evt) => {
+              window.removeEventListener(evt, unlockAudio);
+            });
+          }
+        } catch (e) {
+          // ignore
         }
       };
 

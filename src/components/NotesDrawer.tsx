@@ -82,7 +82,7 @@ export const NotesDrawer: React.FC<NotesDrawerProps> = ({
               className="bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-[11px] text-slate-700 font-medium focus:outline-none focus:border-pink-500 cursor-pointer"
             >
               <option value="general">General</option>
-              <option value="gentle_reminders">Gentle Reminds 🌸</option>
+              <option value="gentle_reminders">Gentle Reminders 🌸</option>
               <option value="somatic">Somatic</option>
               <option value="office">Office</option>
               <option value="task">Tasks</option>

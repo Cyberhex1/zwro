@@ -666,7 +666,7 @@ export default function App() {
   const customTabOrder = [...userSavedOrder, ...missingTabs];
 
   const handleSelectTab = (tabKey: ActiveTab) => {
-    audioSynth.playTabSound(userProfile.soundEffects !== false);
+    audioSynth.playTabSound(userProfile.cuteSoundEffects !== false);
     setActiveTab(tabKey);
   };
 

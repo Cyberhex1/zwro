@@ -175,29 +175,10 @@ ${symptomLogs
             Track physical distress, dread spikes, body locations, and effective coping strategies.
           </p>
         </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleDownloadDoctorCSV}
-            className="px-3.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-            title="Download formatted CSV spreadsheet for doctor or therapy appointment"
-          >
-            <Download className="w-3.5 h-3.5 text-purple-600" />
-            <span>Download CSV for Doctor</span>
-          </button>
-
-          <button
-            onClick={handleExportReport}
-            className="px-3.5 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-          >
-            {copiedReport ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-pink-500" />}
-            <span>{copiedReport ? 'Clinical Summary Copied!' : 'Copy Summary'}</span>
-          </button>
-        </div>
       </div>
 
       {/* Summary Stat Card */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div className="bg-white p-3.5 rounded-2xl border border-pink-100 text-center shadow-2xs">
           <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Incident Logs</span>
           <span className="text-xl font-black text-slate-800 font-mono">{symptomLogs.length}</span>
@@ -206,13 +187,6 @@ ${symptomLogs
         <div className="bg-white p-3.5 rounded-2xl border border-pink-100 text-center shadow-2xs">
           <span className="text-[10px] font-bold text-slate-400 uppercase block">Avg Distress Level</span>
           <span className="text-xl font-black text-pink-600 font-mono">{avgSeverity} / 10</span>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-2xl border border-pink-100 text-center col-span-2 md:col-span-1 shadow-2xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase block">Primary Coping Strategy</span>
-          <span className="text-xs font-extrabold text-slate-700 truncate block mt-1">
-            {symptomLogs[0]?.copingMethod || 'Grounding Breathing'}
-          </span>
         </div>
       </div>
 
@@ -452,6 +426,39 @@ ${symptomLogs
             ))}
           </div>
         )}
+      </div>
+
+      {/* Export & Insights Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 pt-6">
+        <div className="bg-pink-50/50 p-4 rounded-2xl border border-pink-100 flex flex-col justify-center items-center text-center shadow-sm">
+          <span className="text-[10px] font-bold text-pink-600 uppercase tracking-wider block mb-1">Most Effective Coping Strategy</span>
+          <span className="text-sm font-extrabold text-slate-800 break-words mt-1">
+            {symptomLogs.length > 0 && symptomLogs[0]?.copingMethod ? symptomLogs[0].copingMethod : 'Grounding Breathing'}
+          </span>
+          <p className="text-[10px] text-slate-500 mt-2">Based on your recent logs.</p>
+        </div>
+
+        <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-100 flex flex-col justify-center items-center gap-3 shadow-sm">
+          <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider block">Export Data</span>
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+            <button
+              onClick={handleDownloadDoctorCSV}
+              className="w-full px-3.5 py-2 rounded-xl bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              title="Download formatted CSV spreadsheet for doctor or therapy appointment"
+            >
+              <Download className="w-4 h-4 text-purple-600" />
+              <span>Doctor CSV</span>
+            </button>
+
+            <button
+              onClick={handleExportReport}
+              className="w-full px-3.5 py-2 rounded-xl bg-white hover:bg-pink-50 text-pink-700 border border-pink-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            >
+              {copiedReport ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-pink-500" />}
+              <span>{copiedReport ? 'Copied!' : 'Copy Info'}</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
