@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, Settings, User, LogIn, LogOut, Volume2, RotateCcw, ShieldAlert, Trash2, Check, Sparkles, RefreshCw, Download, Upload, Database, FileJson, Sun, Moon, AlertTriangle, Copy } from 'lucide-react';
+import { X, Settings, User, LogIn, LogOut, Volume2, RotateCcw, ShieldAlert, Trash2, Check, Sparkles, RefreshCw, Download, Upload, Database, FileJson, Sun, Moon, AlertTriangle, Copy, Mail, Lock, KeyRound, UserPlus } from 'lucide-react';
 import { UserProfile, AudioType } from '../types';
-import { signInWithGoogleWorkspace, logoutGoogleWorkspace } from '../lib/googleWorkspace';
+import { signInWithGoogleWorkspace, logoutGoogleWorkspace, signInWithEmail, signUpWithEmail, sendResetPassword } from '../lib/googleWorkspace';
 import { User as FirebaseUser } from 'firebase/auth';
 
 interface SettingsModalProps {
@@ -51,7 +51,60 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [showConfirmClearAll, setShowConfirmClearAll] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
+  // Email/Password Auth state
+  const [authTab, setAuthTab] = useState<'google' | 'email'>('google');
+  const [emailMode, setEmailMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+  const [emailInput, setEmailInput] = useState<string>('');
+  const [passwordInput, setPasswordInput] = useState<string>('');
+  const [emailAuthMsg, setEmailAuthMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  const [isEmailLoading, setIsEmailLoading] = useState<boolean>(false);
+
   if (!isOpen) return null;
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailInput.trim()) {
+      setEmailAuthMsg({ type: 'error', text: 'Please enter your email address.' });
+      return;
+    }
+    if (emailMode !== 'forgot' && !passwordInput.trim()) {
+      setEmailAuthMsg({ type: 'error', text: 'Please enter your password.' });
+      return;
+    }
+
+    setIsEmailLoading(true);
+    setEmailAuthMsg(null);
+
+    try {
+      if (emailMode === 'signin') {
+        const cred = await signInWithEmail(emailInput.trim(), passwordInput);
+        setEmailAuthMsg({ type: 'success', text: `Successfully signed in as ${cred.user.email}!` });
+      } else if (emailMode === 'signup') {
+        const cred = await signUpWithEmail(emailInput.trim(), passwordInput);
+        setEmailAuthMsg({ type: 'success', text: `Account created! Signed in as ${cred.user.email}` });
+      } else if (emailMode === 'forgot') {
+        await sendResetPassword(emailInput.trim());
+        setEmailAuthMsg({ type: 'success', text: `Password reset email sent to ${emailInput.trim()}!` });
+      }
+    } catch (err: any) {
+      console.error('Email Auth Error:', err);
+      let message = err.message || 'Authentication failed.';
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        message = 'Invalid email or password. Please check your credentials.';
+      } else if (err.code === 'auth/wrong-password') {
+        message = 'Incorrect password. Please try again or click Forgot Password.';
+      } else if (err.code === 'auth/email-already-in-use') {
+        message = 'An account with this email already exists. Try signing in.';
+      } else if (err.code === 'auth/weak-password') {
+        message = 'Password should be at least 6 characters.';
+      } else if (err.code === 'auth/invalid-email') {
+        message = 'Please enter a valid email address.';
+      }
+      setEmailAuthMsg({ type: 'error', text: message });
+    } finally {
+      setIsEmailLoading(false);
+    }
+  };
 
   const handleThemeChange = (newTheme: 'light' | 'dark') => {
     setThemeMode(newTheme);
@@ -183,22 +236,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Content Body */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
-          {/* Account & Google Login Control */}
+          {/* Account Control & Sync */}
           <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
                 <User className="w-4 h-4 text-pink-500" />
-                <span>Account Control & Sync</span>
+                <span>Account Control & Cloud Sync</span>
               </h3>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                 googleUser ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-200 text-slate-600'
               }`}>
-                {googleUser ? 'Google Connected' : 'Guest Account'}
+                {googleUser ? (googleUser.providerData?.some(p => p.providerId === 'password') ? 'Email Account' : 'Google Account') : 'Guest Account'}
               </span>
             </div>
 
             {googleUser ? (
-              <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-100">
+              <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200">
                 <div className="flex items-center gap-2.5 overflow-hidden">
                   {googleUser.photoURL ? (
                     <img src={googleUser.photoURL} alt="Avatar" className="w-8 h-8 rounded-full border border-pink-200" />
@@ -215,51 +268,179 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 <button
                   onClick={handleGoogleLogout}
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center gap-1 transition-all cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>Disconnect</span>
+                  <span>Sign Out</span>
                 </button>
               </div>
             ) : (
-              <div className="space-y-2">
-                <p className="text-slate-500 text-[11px]">
-                  Sign in with Google to enable Workspace sync, save cloud logs, and access Google Tasks.
-                </p>
-                <button
-                  onClick={handleGoogleLogin}
-                  disabled={isLoggingIn}
-                  className="w-full py-2.5 bg-white border border-slate-200 hover:bg-slate-100 font-bold text-slate-800 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
-                >
-                  <LogIn className="w-4 h-4 text-pink-500" />
-                  <span>{isLoggingIn ? 'Connecting...' : 'Sign in with Google Account'}</span>
-                </button>
+              <div className="space-y-3">
+                {/* Method selector tabs */}
+                <div className="grid grid-cols-2 gap-1 bg-slate-200/60 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setAuthTab('google')}
+                    className={`py-1.5 px-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                      authTab === 'google'
+                        ? 'bg-white text-slate-800 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-800'
+                    }`}
+                  >
+                    <LogIn className="w-3.5 h-3.5 text-pink-500" />
+                    <span>Google Sign-In</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAuthTab('email')}
+                    className={`py-1.5 px-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                      authTab === 'email'
+                        ? 'bg-white text-slate-800 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-800'
+                    }`}
+                  >
+                    <Mail className="w-3.5 h-3.5 text-pink-500" />
+                    <span>Email & Password</span>
+                  </button>
+                </div>
 
-                {loginError && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs space-y-2">
-                    <div className="flex items-start gap-2 font-bold">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <span>Google Login Error</span>
-                    </div>
-                    <p className="text-[11px] leading-relaxed text-amber-800">{loginError}</p>
-                    <div className="pt-1 flex items-center justify-between gap-2 border-t border-amber-200/60">
-                      <span className="text-[10px] font-mono font-semibold truncate bg-white/80 px-2 py-0.5 rounded border border-amber-200">
-                        {window.location.hostname}
-                      </span>
+                {authTab === 'google' ? (
+                  <div className="space-y-2">
+                    <p className="text-slate-500 text-[11px]">
+                      Sign in with Google to enable Workspace sync, save cloud logs, and access Google Tasks.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleGoogleLogin}
+                      disabled={isLoggingIn}
+                      className="w-full py-2.5 bg-white border border-slate-200 hover:bg-slate-100 font-bold text-slate-800 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+                    >
+                      <LogIn className="w-4 h-4 text-pink-500" />
+                      <span>{isLoggingIn ? 'Connecting...' : 'Sign in with Google Account'}</span>
+                    </button>
+
+                    {loginError && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs space-y-2">
+                        <div className="flex items-start gap-2 font-bold">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <span>Google Login Error</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-amber-800">{loginError}</p>
+                        <div className="pt-1 flex items-center justify-between gap-2 border-t border-amber-200/60">
+                          <span className="text-[10px] font-mono font-semibold truncate bg-white/80 px-2 py-0.5 rounded border border-amber-200">
+                            {window.location.hostname}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(window.location.hostname);
+                              setCopiedDomain(true);
+                              setTimeout(() => setCopiedDomain(false), 2000);
+                            }}
+                            className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                          >
+                            {copiedDomain ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                            <span>{copiedDomain ? 'Copied Domain!' : 'Copy Domain'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <form onSubmit={handleEmailAuth} className="space-y-3 pt-1">
+                    {/* Sub-mode selector: Sign In / Register / Reset */}
+                    <div className="flex justify-between border-b border-slate-200 pb-2 font-bold text-[11px] text-slate-500">
                       <button
                         type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(window.location.hostname);
-                          setCopiedDomain(true);
-                          setTimeout(() => setCopiedDomain(false), 2000);
-                        }}
-                        className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                        onClick={() => { setEmailMode('signin'); setEmailAuthMsg(null); }}
+                        className={`hover:text-pink-600 cursor-pointer ${emailMode === 'signin' ? 'text-pink-600 border-b-2 border-pink-500 pb-1 -mb-[9px]' : ''}`}
                       >
-                        {copiedDomain ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                        <span>{copiedDomain ? 'Copied Domain!' : 'Copy Domain'}</span>
+                        Sign In
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setEmailMode('signup'); setEmailAuthMsg(null); }}
+                        className={`hover:text-pink-600 cursor-pointer ${emailMode === 'signup' ? 'text-pink-600 border-b-2 border-pink-500 pb-1 -mb-[9px]' : ''}`}
+                      >
+                        Create Account
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setEmailMode('forgot'); setEmailAuthMsg(null); }}
+                        className={`hover:text-pink-600 cursor-pointer ${emailMode === 'forgot' ? 'text-pink-600 border-b-2 border-pink-500 pb-1 -mb-[9px]' : ''}`}
+                      >
+                        Forgot Password?
                       </button>
                     </div>
-                  </div>
+
+                    <div className="space-y-2">
+                      <div>
+                        <label className="text-[11px] font-semibold text-slate-600 block mb-1">Email Address</label>
+                        <div className="relative">
+                          <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                          <input
+                            type="email"
+                            required
+                            placeholder="your.email@example.com"
+                            value={emailInput}
+                            onChange={(e) => setEmailInput(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-slate-800 font-medium focus:outline-none focus:border-pink-500"
+                          />
+                        </div>
+                      </div>
+
+                      {emailMode !== 'forgot' && (
+                        <div>
+                          <label className="text-[11px] font-semibold text-slate-600 block mb-1">Password</label>
+                          <div className="relative">
+                            <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                            <input
+                              type="password"
+                              required
+                              placeholder="••••••••"
+                              value={passwordInput}
+                              onChange={(e) => setPasswordInput(e.target.value)}
+                              className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-slate-800 font-medium focus:outline-none focus:border-pink-500"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {emailAuthMsg && (
+                      <div className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center gap-2 ${
+                        emailAuthMsg.type === 'error'
+                          ? 'bg-rose-50 border-rose-200 text-rose-800'
+                          : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                      }`}>
+                        {emailAuthMsg.type === 'error' ? (
+                          <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                        ) : (
+                          <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                        )}
+                        <span>{emailAuthMsg.text}</span>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={isEmailLoading}
+                      className="w-full py-2.5 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-pink-500/20"
+                    >
+                      {emailMode === 'signin' && <LogIn className="w-4 h-4" />}
+                      {emailMode === 'signup' && <UserPlus className="w-4 h-4" />}
+                      {emailMode === 'forgot' && <KeyRound className="w-4 h-4" />}
+                      <span>
+                        {isEmailLoading
+                          ? 'Processing...'
+                          : emailMode === 'signin'
+                          ? 'Sign In with Email'
+                          : emailMode === 'signup'
+                          ? 'Create New Account'
+                          : 'Send Password Reset Link'}
+                      </span>
+                    </button>
+                  </form>
                 )}
               </div>
             )}

@@ -1,5 +1,15 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User, signOut } from 'firebase/auth';
+import {
+  getAuth,
+  signInWithPopup,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  User,
+  signOut,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize Firebase App
@@ -64,6 +74,18 @@ export const logoutGoogleWorkspace = async () => {
   if (typeof window !== 'undefined') {
     sessionStorage.removeItem('zawe_google_token');
   }
+};
+
+export const signInWithEmail = async (email: string, pass: string) => {
+  return await signInWithEmailAndPassword(auth, email, pass);
+};
+
+export const signUpWithEmail = async (email: string, pass: string) => {
+  return await createUserWithEmailAndPassword(auth, email, pass);
+};
+
+export const sendResetPassword = async (email: string) => {
+  return await sendPasswordResetEmail(auth, email);
 };
 
 export const getCachedAccessToken = () => cachedAccessToken;

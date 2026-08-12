@@ -546,7 +546,7 @@ export default function App() {
         />
 
         {/* Primary Tab Navigation */}
-        <nav className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <nav className="flex gap-2 overflow-x-auto pb-2.5 tab-scrollbar">
           <button
             onClick={() => setActiveTab('somatic')}
             className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${

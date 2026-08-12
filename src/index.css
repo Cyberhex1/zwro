@@ -255,4 +255,41 @@ html.dark body,
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6) !important;
 }
 
+/* Thin custom scrollbar for primary tab navigation */
+.tab-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(236, 72, 153, 0.4) rgba(241, 245, 249, 0.8);
+}
+
+.tab-scrollbar::-webkit-scrollbar {
+  height: 5px;
+}
+
+.tab-scrollbar::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.6);
+  border-radius: 9999px;
+}
+
+.tab-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(236, 72, 153, 0.4);
+  border-radius: 9999px;
+}
+
+.tab-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(236, 72, 153, 0.8);
+}
+
+.dark .tab-scrollbar {
+  scrollbar-color: rgba(244, 114, 182, 0.5) rgba(30, 41, 59, 0.8);
+}
+
+.dark .tab-scrollbar::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.dark .tab-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(244, 114, 182, 0.5);
+}
+
+
 
